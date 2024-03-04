@@ -1,0 +1,38 @@
+CREATE TABLE Products (
+    ID INT PRIMARY KEY,
+    Name VARCHAR(255) NOT NULL
+);
+
+
+CREATE TABLE Shelves (
+    ID VARCHAR(255) PRIMARY KEY,
+    Name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE ProductShelfRelations (
+    ID SERIAL PRIMARY KEY,
+    Product_ID INT,
+    Main_Shelf_ID VARCHAR(255),
+    Add_Shelf_ID VARCHAR(255),
+    FOREIGN KEY (Product_ID) REFERENCES Products(ID),
+    FOREIGN KEY (Main_Shelf_ID) REFERENCES Shelves(ID),
+    FOREIGN KEY (Add_Shelf_ID) REFERENCES Shelves(ID)
+);
+
+
+
+CREATE TABLE OrderItems (
+    ID INT PRIMARY KEY,
+    Order_Number INT,
+    Product_ID INT,
+    Quantity INT,
+    FOREIGN KEY (Product_ID) REFERENCES Products(ID)
+);
+
+
+
+Ref: posts.user_id > users.id // many-to-one
+
+Ref: users.id < follows.following_user_id
+
+Ref: users.id < follows.followed_user_id
