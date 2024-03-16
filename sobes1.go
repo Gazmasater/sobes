@@ -60,18 +60,14 @@ func readOrderNumbersFromArgs() []int {
 }
 
 func printOrdersByShelves(db *sql.DB, orderNumbers []int) {
-	shelfItems := make(map[string][]string)
+	shelfItems := make(map[string]map[int]string)
+	shelfAdds := make(map[string]map[int][]string)
 
 	for _, orderNumber := range orderNumbers {
 		query := `
-			SELECT Shelves_Main.Name AS Main_Shelf, Products.Name, OrderItems.Quantity, Products.ID AS Product_ID, ARRAY_AGG(DISTINCT Shelves_Add.Name) AS Add_Shelves
-			FROM OrderItems
-			INNER JOIN Products ON OrderItems.Product_ID = Products.ID
-			INNER JOIN ProductShelfRelations ON OrderItems.Product_ID = ProductShelfRelations.Product_ID
-			INNER JOIN Shelves Shelves_Main ON ProductShelfRelations.Main_Shelf_ID = Shelves_Main.ID
-			LEFT JOIN Shelves Shelves_Add ON ProductShelfRelations.Add_Shelf_ID = Shelves_Add.ID
-			WHERE OrderItems.Order_Number = $1
-			GROUP BY Main_Shelf, Products.Name, OrderItems.Quantity, Products.ID
+			SELECT Shelves.Name AS Main_Shelf, Products.Name, OrderItems.Quantity, Products.ID AS Product_ID, ProductShelfRelations.Add_Shelf_ID
+			FROM OrderItems, Products, ProductShelfRelations, Shelves
+			WHERE OrderItems.Product_ID = Products.ID AND OrderItems.Product_ID = ProductShelfRelations.Product_ID AND ProductShelfRelations.Main_Shelf_ID = Shelves.ID AND OrderItems.Order_Number = $1
 		`
 
 		rows, err := db.Query(query, orderNumber)
@@ -81,24 +77,28 @@ func printOrdersByShelves(db *sql.DB, orderNumbers []int) {
 		defer rows.Close()
 
 		for rows.Next() {
-			var mainShelf, productName sql.NullString
+			var mainShelf, productName, addShelf sql.NullString
 			var quantity, productID int
-			var addShelvesArray []byte
 
-			err := rows.Scan(&mainShelf, &productName, &quantity, &productID, &addShelvesArray)
+			err := rows.Scan(&mainShelf, &productName, &quantity, &productID, &addShelf)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			addShelves := parseAddShelvesArray(addShelvesArray)
-
 			item := fmt.Sprintf("%s (id=%d)\nзаказ %d, %d шт", productName.String, productID, orderNumber, quantity)
 
-			if len(addShelves) > 0 {
-				item += fmt.Sprintf("\nдоп стеллаж:%s", strings.Join(addShelves, ", "))
+			if _, ok := shelfItems[mainShelf.String]; !ok {
+				shelfItems[mainShelf.String] = make(map[int]string)
+				shelfAdds[mainShelf.String] = make(map[int][]string)
 			}
 
-			shelfItems[mainShelf.String] = append(shelfItems[mainShelf.String], item)
+			if _, ok := shelfItems[mainShelf.String][productID]; !ok {
+				shelfItems[mainShelf.String][productID] = item
+			}
+
+			if addShelf.Valid {
+				shelfAdds[mainShelf.String][productID] = append(shelfAdds[mainShelf.String][productID], addShelf.String)
+			}
 		}
 
 		if err := rows.Err(); err != nil {
@@ -108,31 +108,12 @@ func printOrdersByShelves(db *sql.DB, orderNumbers []int) {
 
 	for shelf, items := range shelfItems {
 		fmt.Printf("=== %s\n", shelf)
-		for _, item := range items {
+		for productID, item := range items {
+			adds := strings.Join(shelfAdds[shelf][productID], ", ")
+			if adds != "" {
+				item += fmt.Sprintf("\nдоп стеллаж: %s", adds)
+			}
 			fmt.Printf("%s\n\n", item)
 		}
 	}
-}
-
-func parseAddShelvesArray(addShelvesArray []byte) []string {
-	var addShelves []string
-
-	// Check if the array is not empty and not "NULL"
-	if len(addShelvesArray) > 2 {
-		// Remove curly braces from the array representation
-		addShelvesArray = addShelvesArray[1 : len(addShelvesArray)-1]
-
-		// Check if the array is not "NULL"
-		if string(addShelvesArray) != "NULL" {
-			// Split the array into individual elements
-			addShelfElements := strings.Split(string(addShelvesArray), ",")
-
-			// Trim spaces from each element and add to the slice
-			for _, element := range addShelfElements {
-				addShelves = append(addShelves, strings.TrimSpace(element))
-			}
-		}
-	}
-
-	return addShelves
 }

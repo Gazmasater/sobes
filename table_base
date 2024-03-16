@@ -31,8 +31,3 @@ CREATE TABLE OrderItems (
 
 
 
-Ref: posts.user_id > users.id // many-to-one
-
-Ref: users.id < follows.following_user_id
-
-Ref: users.id < follows.followed_user_id
