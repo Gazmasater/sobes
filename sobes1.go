@@ -13,27 +13,33 @@ import (
 
 func printItemsByShelves(db *sql.DB, orderID int, shelf string, first bool) error {
 	query := `
-	SELECT 
-	ms.name AS main_shelf,
-	oi.order_id,
-	p.name AS product_name,
-	COUNT(oi.id) AS total_items,
-	array_agg(DISTINCT asl.name) AS additional_shelves
-FROM 
-	OrderItems oi,
-	Products p,
-	MainShelves ms,
-	ProductShelfRelations psr,
-	AdditionalShelves asl
-WHERE 
-	oi.product_id = p.id
-	AND p.id = psr.product_id
-	AND psr.main_shelf_id = ms.id
-	AND p.id = asl.product_id
-	AND oi.order_id = $1
-	AND ms.name = $2
-GROUP BY 
-	ms.name, oi.order_id, p.name, p.id;
+		SELECT 
+			ms.name AS main_shelf,
+			oi.order_id,
+			p.name AS product_name,
+			(SELECT COUNT(*) FROM OrderItems oi2 WHERE oi2.product_id = p.id AND oi2.order_id = oi.order_id) AS total_items,
+			(SELECT ARRAY(
+					SELECT DISTINCT asl.name
+					FROM AdditionalShelves asl
+					WHERE asl.id IN (
+						SELECT psr2.add_shelf_id
+						FROM ProductShelfRelations psr2
+						WHERE psr2.product_id = p.id
+					)
+				)) AS additional_shelves
+		FROM 
+			OrderItems oi,
+			Products p,
+			MainShelves ms,
+			ProductShelfRelations psr
+		WHERE 
+			oi.product_id = p.id
+			AND p.id = psr.product_id
+			AND psr.main_shelf_id = ms.id
+			AND oi.order_id = $1
+			AND ms.name = $2
+		GROUP BY 
+			ms.name, oi.order_id, p.name, p.id;
 	`
 
 	rows, err := db.Query(query, orderID, shelf)
