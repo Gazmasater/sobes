@@ -13,8 +13,10 @@ CREATE TABLE MainShelves (
 
 CREATE TABLE AdditionalShelves (
     ID SERIAL PRIMARY KEY,
-    Name VARCHAR(255) NOT NULL
+    Name VARCHAR(255) NOT NULL,
+    Product_ID INT REFERENCES Products(ID)
 );
+
 
 
 CREATE TABLE OrderItems (
