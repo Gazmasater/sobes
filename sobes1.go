@@ -11,78 +11,74 @@ import (
 	"github.com/lib/pq"
 )
 
-func printItemsByShelves(rows *sql.Rows, first bool) error {
-	itemChan := make(chan []interface{})
-	errChan := make(chan error)
-	done := make(chan bool)
+func printItemsByShelves(db *sql.DB, orderID int, shelf string, first bool) error {
+	query := `
+		SELECT 
+			ms.name AS main_shelf,
+			oi.order_id,
+			p.name AS product_name,
+			(SELECT COUNT(*) FROM OrderItems oi2 WHERE oi2.product_id = p.id AND oi2.order_id = oi.order_id) AS total_items,
+			(SELECT ARRAY(
+					SELECT DISTINCT asl.name
+					FROM AdditionalShelves asl
+					WHERE asl.id IN (
+						SELECT psr2.add_shelf_id
+						FROM ProductShelfRelations psr2
+						WHERE psr2.product_id = p.id
+					)
+				)) AS additional_shelves
+		FROM 
+			OrderItems oi,
+			Products p,
+			MainShelves ms,
+			ProductShelfRelations psr
+		WHERE 
+			oi.product_id = p.id
+			AND p.id = psr.product_id
+			AND psr.main_shelf_id = ms.id
+			AND oi.order_id = $1
+			AND ms.name = $2
+		GROUP BY 
+			ms.name, oi.order_id, p.name, p.id;
+	`
 
-	go func() {
-		for {
-			select {
-			case item, ok := <-itemChan:
-				if !ok {
-					itemChan = nil
-					continue
-				}
-				mainShelf := item[0].(string)
-				orderID := item[1].(int)
-				productName := item[2].(string)
-				totalItems := item[3].(int)
-				additionalShelves := item[4].(pq.StringArray)
+	rows, err := db.Query(query, orderID, shelf)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
 
-				// Вывод информации о стеллаже только при первом вызове функции
-				if first {
-					fmt.Printf("Стеллаж: %s\n", mainShelf)
-					first = false
-				}
+	for rows.Next() {
+		var mainShelf, productName string
+		var orderID, totalItems int
+		var additionalShelves []string
 
-				// Вывод информации о товаре на стеллаже
-				fmt.Printf("Заказ %d\n", orderID)
-				fmt.Printf("Товар: %s\n", productName)
-				fmt.Printf("Общее количество товара: %d\n", totalItems)
-				fmt.Println("Дополнительные стеллажи:")
-				for _, shelf := range additionalShelves {
-					fmt.Printf("- %s\n", shelf)
-				}
-				fmt.Println()
-
-			case err := <-errChan:
-				if err != nil {
-					log.Fatal(err)
-				}
-				done <- true
-				return
-			}
-		}
-	}()
-
-	go func() {
-		defer close(itemChan)
-		defer close(errChan)
-
-		for rows.Next() {
-			var mainShelf, productName string
-			var orderID, totalItems int
-			var additionalShelves pq.StringArray
-
-			err := rows.Scan(&mainShelf, &orderID, &productName, &totalItems, &additionalShelves)
-			if err != nil {
-				errChan <- err
-				return
-			}
-
-			item := []interface{}{mainShelf, orderID, productName, totalItems, additionalShelves}
-			itemChan <- item
+		err := rows.Scan(&mainShelf, &orderID, &productName, &totalItems, pq.Array(&additionalShelves))
+		if err != nil {
+			return err
 		}
 
-		if err := rows.Err(); err != nil {
-			errChan <- err
+		// Вывод информации о стеллаже только при первом вызове функции
+		if first {
+			fmt.Printf("Стеллаж: %s\n", mainShelf)
+			first = false
 		}
 
-		done <- true
-	}()
+		// Вывод информации о товаре на стеллаже
+		fmt.Printf("Заказ %d\n", orderID)
+		fmt.Printf("Товар: %s\n", productName)
+		fmt.Printf("Общее количество товара: %d\n", totalItems)
+		fmt.Println("Дополнительные стеллажи:")
+		for _, shelf := range additionalShelves {
+			fmt.Printf("- %s\n", shelf)
+		}
+		fmt.Println()
+	}
 
-	<-done
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -119,46 +115,10 @@ func main() {
 				continue
 			}
 
-			query := `
-				SELECT 
-					ms.name AS main_shelf,
-					oi.order_id,
-					p.name AS product_name,
-					(SELECT COUNT(*) FROM OrderItems oi2 WHERE oi2.product_id = p.id AND oi2.order_id = oi.order_id) AS total_items,
-					(SELECT ARRAY(
-							SELECT DISTINCT asl.name
-							FROM AdditionalShelves asl
-							WHERE asl.id IN (
-								SELECT psr2.add_shelf_id
-								FROM ProductShelfRelations psr2
-								WHERE psr2.product_id = p.id
-							)
-						)) AS additional_shelves
-				FROM 
-					OrderItems oi,
-					Products p,
-					MainShelves ms,
-					ProductShelfRelations psr
-				WHERE 
-					oi.product_id = p.id
-					AND p.id = psr.product_id
-					AND psr.main_shelf_id = ms.id
-					AND oi.order_id = $1
-					AND ms.name = $2
-				GROUP BY 
-					ms.name, oi.order_id, p.name, p.id;
-			`
-
-			rows, err := db.Query(query, orderID, shelf)
+			// Вызов функции для вывода информации по заказу для текущего основного стеллажа
+			err = printItemsByShelves(db, orderID, shelf, first)
 			if err != nil {
-				fmt.Printf("Ошибка при выполнении запроса для заказа %d и стеллажа %s: %v\n", orderID, shelf, err)
-				continue
-			}
-			defer rows.Close()
-
-			err = printItemsByShelves(rows, first)
-			if err != nil {
-				fmt.Printf("Ошибка при обработке результатов запроса для заказа %d и стеллажа %s: %v\n", orderID, shelf, err)
+				fmt.Printf("Ошибка при обработке заказа %d для стеллажа %s: %v\n", orderID, shelf, err)
 			}
 			first = false // Устанавливаем флаг в false после первого вызова функции
 		}
