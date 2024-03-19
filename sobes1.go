@@ -1,32 +1,33 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 )
 
-func printItemsByShelves(db *sql.DB, orderID int, shelf string, first bool) error {
-	query := `
+func printItemsByShelves(db *sqlx.DB, orderID int, shelf string, first bool) error {
+	// Подготовка запроса
+	stmt, err := db.Preparex(`
 		SELECT 
 			ms.name AS main_shelf,
 			oi.order_id,
 			p.name AS product_name,
-			(SELECT COUNT(*) FROM OrderItems oi2 WHERE oi2.product_id = p.id AND oi2.order_id = oi.order_id) AS total_items,
-			(SELECT ARRAY(
-					SELECT DISTINCT asl.name
-					FROM AdditionalShelves asl
-					WHERE asl.id IN (
-						SELECT psr2.add_shelf_id
-						FROM ProductShelfRelations psr2
-						WHERE psr2.product_id = p.id
-					)
-				)) AS additional_shelves
+			COUNT(oi.id) AS total_items,
+			ARRAY(
+				SELECT DISTINCT asl.name
+				FROM AdditionalShelves asl
+				WHERE asl.id IN (
+					SELECT psr2.add_shelf_id
+					FROM ProductShelfRelations psr2
+					WHERE psr2.product_id = p.id
+				)
+			) AS additional_shelves
 		FROM 
 			OrderItems oi,
 			Products p,
@@ -40,9 +41,14 @@ func printItemsByShelves(db *sql.DB, orderID int, shelf string, first bool) erro
 			AND ms.name = $2
 		GROUP BY 
 			ms.name, oi.order_id, p.name, p.id;
-	`
+	`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
 
-	rows, err := db.Query(query, orderID, shelf)
+	// Выполнение подготовленного запроса с передачей параметров
+	rows, err := stmt.Query(orderID, shelf)
 	if err != nil {
 		return err
 	}
@@ -84,7 +90,7 @@ func printItemsByShelves(db *sql.DB, orderID int, shelf string, first bool) erro
 
 func main() {
 	// Подключение к базе данных
-	db, err := sql.Open("postgres", "host=localhost port=5432 user=lew password=qwert dbname=sobes sslmode=disable")
+	db, err := sqlx.Open("postgres", "host=localhost port=5432 user=lew password=qwert dbname=sobes sslmode=disable")
 	if err != nil {
 		log.Fatal(err)
 	}
