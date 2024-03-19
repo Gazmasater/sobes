@@ -1,32 +1,46 @@
+
 CREATE TABLE Products (
-    ID INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+
+CREATE TABLE MainShelves (
+    ID SERIAL PRIMARY KEY,
     Name VARCHAR(255) NOT NULL
 );
 
 
-CREATE TABLE Shelves (
-    ID VARCHAR(255) PRIMARY KEY,
+CREATE TABLE AdditionalShelves (
+    ID SERIAL PRIMARY KEY,
     Name VARCHAR(255) NOT NULL
 );
+
+
+CREATE TABLE OrderItems (
+    ID SERIAL PRIMARY KEY,
+    Order_ID INT,
+    Product_ID INT,
+    Shelf_ID INT,
+    Shelf_Type VARCHAR(255),
+    Quantity INT,  -- Добавленное поле для количества товара
+    FOREIGN KEY (Product_ID) REFERENCES Products(ID)
+);
+
 
 CREATE TABLE ProductShelfRelations (
     ID SERIAL PRIMARY KEY,
     Product_ID INT,
-    Main_Shelf_ID VARCHAR(255),
-    Add_Shelf_ID VARCHAR(255),
+    Main_Shelf_ID INT,
+    Add_Shelf_ID INT,
+    Relation_Type VARCHAR(255),
     FOREIGN KEY (Product_ID) REFERENCES Products(ID),
-    FOREIGN KEY (Main_Shelf_ID) REFERENCES Shelves(ID),
-    FOREIGN KEY (Add_Shelf_ID) REFERENCES Shelves(ID)
-);
-
-
-
-CREATE TABLE OrderItems (
-    ID INT PRIMARY KEY,
-    Order_Number INT,
-    Product_ID INT,
-    Quantity INT,
-    FOREIGN KEY (Product_ID) REFERENCES Products(ID)
+    FOREIGN KEY (Main_Shelf_ID) REFERENCES MainShelves(ID),
+    FOREIGN KEY (Add_Shelf_ID) REFERENCES AdditionalShelves(ID),
+    CONSTRAINT fk_single_additional_shelf CHECK (
+        (Add_Shelf_ID IS NOT NULL AND Main_Shelf_ID IS NULL) OR
+        (Add_Shelf_ID IS NULL AND Main_Shelf_ID IS NOT NULL)
+    )
 );
 
 
