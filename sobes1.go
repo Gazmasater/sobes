@@ -11,43 +11,7 @@ import (
 	"github.com/lib/pq"
 )
 
-func printItemsByShelves(db *sql.DB, orderID int, shelf string, first bool) error {
-	query := `
-		SELECT 
-			ms.name AS main_shelf,
-			oi.order_id,
-			p.name AS product_name,
-			(SELECT COUNT(*) FROM OrderItems oi2 WHERE oi2.product_id = p.id AND oi2.order_id = oi.order_id) AS total_items,
-			(SELECT ARRAY(
-					SELECT DISTINCT asl.name
-					FROM AdditionalShelves asl
-					WHERE asl.id IN (
-						SELECT psr2.add_shelf_id
-						FROM ProductShelfRelations psr2
-						WHERE psr2.product_id = p.id
-					)
-				)) AS additional_shelves
-		FROM 
-			OrderItems oi,
-			Products p,
-			MainShelves ms,
-			ProductShelfRelations psr
-		WHERE 
-			oi.product_id = p.id
-			AND p.id = psr.product_id
-			AND psr.main_shelf_id = ms.id
-			AND oi.order_id = $1
-			AND ms.name = $2
-		GROUP BY 
-			ms.name, oi.order_id, p.name, p.id;
-	`
-
-	rows, err := db.Query(query, orderID, shelf)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
+func printItemsByShelves(rows *sql.Rows, first bool) error {
 	for rows.Next() {
 		var mainShelf, productName string
 		var orderID, totalItems int
@@ -115,10 +79,46 @@ func main() {
 				continue
 			}
 
-			// Вызов функции для вывода информации по заказу для текущего основного стеллажа
-			err = printItemsByShelves(db, orderID, shelf, first)
+			query := `
+				SELECT 
+					ms.name AS main_shelf,
+					oi.order_id,
+					p.name AS product_name,
+					(SELECT COUNT(*) FROM OrderItems oi2 WHERE oi2.product_id = p.id AND oi2.order_id = oi.order_id) AS total_items,
+					(SELECT ARRAY(
+							SELECT DISTINCT asl.name
+							FROM AdditionalShelves asl
+							WHERE asl.id IN (
+								SELECT psr2.add_shelf_id
+								FROM ProductShelfRelations psr2
+								WHERE psr2.product_id = p.id
+							)
+						)) AS additional_shelves
+				FROM 
+					OrderItems oi,
+					Products p,
+					MainShelves ms,
+					ProductShelfRelations psr
+				WHERE 
+					oi.product_id = p.id
+					AND p.id = psr.product_id
+					AND psr.main_shelf_id = ms.id
+					AND oi.order_id = $1
+					AND ms.name = $2
+				GROUP BY 
+					ms.name, oi.order_id, p.name, p.id;
+			`
+
+			rows, err := db.Query(query, orderID, shelf)
 			if err != nil {
-				fmt.Printf("Ошибка при обработке заказа %d для стеллажа %s: %v\n", orderID, shelf, err)
+				fmt.Printf("Ошибка при выполнении запроса для заказа %d и стеллажа %s: %v\n", orderID, shelf, err)
+				continue
+			}
+			defer rows.Close()
+
+			err = printItemsByShelves(rows, first)
+			if err != nil {
+				fmt.Printf("Ошибка при обработке результатов запроса для заказа %d и стеллажа %s: %v\n", orderID, shelf, err)
 			}
 			first = false // Устанавливаем флаг в false после первого вызова функции
 		}
