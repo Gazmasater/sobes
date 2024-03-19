@@ -12,37 +12,77 @@ import (
 )
 
 func printItemsByShelves(rows *sql.Rows, first bool) error {
-	for rows.Next() {
-		var mainShelf, productName string
-		var orderID, totalItems int
-		var additionalShelves []string
+	itemChan := make(chan []interface{})
+	errChan := make(chan error)
+	done := make(chan bool)
 
-		err := rows.Scan(&mainShelf, &orderID, &productName, &totalItems, pq.Array(&additionalShelves))
-		if err != nil {
-			return err
+	go func() {
+		for {
+			select {
+			case item, ok := <-itemChan:
+				if !ok {
+					itemChan = nil
+					continue
+				}
+				mainShelf := item[0].(string)
+				orderID := item[1].(int)
+				productName := item[2].(string)
+				totalItems := item[3].(int)
+				additionalShelves := item[4].(pq.StringArray)
+
+				// Вывод информации о стеллаже только при первом вызове функции
+				if first {
+					fmt.Printf("Стеллаж: %s\n", mainShelf)
+					first = false
+				}
+
+				// Вывод информации о товаре на стеллаже
+				fmt.Printf("Заказ %d\n", orderID)
+				fmt.Printf("Товар: %s\n", productName)
+				fmt.Printf("Общее количество товара: %d\n", totalItems)
+				fmt.Println("Дополнительные стеллажи:")
+				for _, shelf := range additionalShelves {
+					fmt.Printf("- %s\n", shelf)
+				}
+				fmt.Println()
+
+			case err := <-errChan:
+				if err != nil {
+					log.Fatal(err)
+				}
+				done <- true
+				return
+			}
+		}
+	}()
+
+	go func() {
+		defer close(itemChan)
+		defer close(errChan)
+
+		for rows.Next() {
+			var mainShelf, productName string
+			var orderID, totalItems int
+			var additionalShelves pq.StringArray
+
+			err := rows.Scan(&mainShelf, &orderID, &productName, &totalItems, &additionalShelves)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			item := []interface{}{mainShelf, orderID, productName, totalItems, additionalShelves}
+			itemChan <- item
 		}
 
-		// Вывод информации о стеллаже только при первом вызове функции
-		if first {
-			fmt.Printf("Стеллаж: %s\n", mainShelf)
-			first = false
+		if err := rows.Err(); err != nil {
+			errChan <- err
 		}
 
-		// Вывод информации о товаре на стеллаже
-		fmt.Printf("Заказ %d\n", orderID)
-		fmt.Printf("Товар: %s\n", productName)
-		fmt.Printf("Общее количество товара: %d\n", totalItems)
-		fmt.Println("Дополнительные стеллажи:")
-		for _, shelf := range additionalShelves {
-			fmt.Printf("- %s\n", shelf)
-		}
-		fmt.Println()
-	}
+		done <- true
+	}()
 
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
+	<-done
 	return nil
 }
 
