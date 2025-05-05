@@ -194,6 +194,15 @@ r.Get("/swagger/*", httpSwagger.WrapHandler)
 go run ./cmd/server
 🌐 Swagger доступен по адресу:
 http://localhost:8080/swagger/index.html
+func main() {
+	database := db.Init()
+	h := handlers.Handler{DB: database}
+
+	r := router.SetupRoutes(h)
+
+	log.Println("API running at :8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
+}
 
 
 func SetupRoutes(h handlers.Handler) *chi.Mux {
@@ -214,6 +223,41 @@ func SetupRoutes(h handlers.Handler) *chi.Mux {
 
     return r
 }
+
+func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+
+	log.Printf("Request path: %s", r.URL.Path)
+	log.Printf("ID param: %s", chi.URLParam(r, "id"))
+	idStr := chi.URLParam(r, "id")
+
+	log.Printf("Received ID: %s", idStr)
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		log.Printf("Error converting ID: %v", err)
+		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	var p models.Person
+	if err := h.DB.First(&p, id).Error; err != nil {
+		log.Printf("Person not found with ID %d", id)
+		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
+		return
+	}
+
+	if err := h.DB.Delete(&p).Error; err != nil {
+		log.Printf("Error deleting person with ID %d", id)
+		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+curl -X DELETE http://localhost:8080/people/2
+{"error":"invalid ID"}
+
 
 
 
