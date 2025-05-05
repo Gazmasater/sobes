@@ -228,6 +228,8 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 2025/05/05 23:14:26 Error converting ID: strconv.ParseInt: parsing "": invalid syntax
 2025/05/05 23:14:26 "DELETE http://localhost:8080/people/1 HTTP/1.1" from 127.0.0.1:32806 - 400 23B in 60.428µs
 
+curl -X DELETE http://localhost:8080/people/1
+
 
 
 
