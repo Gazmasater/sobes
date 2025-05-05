@@ -197,50 +197,27 @@ http://localhost:8080/swagger/index.html
 
 
 
-curl -X 'DELETE' \
-  'http://localhost:8080/people/2' \
-  -H 'accept: application/json'
-
-Request URL
-
-http://localhost:8080/people/2
-
-Server response
-Code	Details
-204	
-Response headers
-
- date: Mon,05 May 2025 18:24:46 GMT s
 
 
-
- // DeletePerson godoc
-// @Summary Удалить человека
-// @Description Удаляет запись человека по ID
-// @Tags people
-// @Param id path int true "ID человека"
-// @Success 204 "No Content"
-// @Failure 404 {object} map[string]string
-// @Router /people/{id} [delete]
 func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
+		return
+	}
 
-	// Удаление записи
-	h.DB.Delete(&models.Person{}, id)
+	var p models.Person
+	if err := h.DB.First(&p, id).Error; err != nil {
+		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
+		return
+	}
 
-	// Ответ без содержимого
+	// ЖЁСТКОЕ УДАЛЕНИЕ
+	if err := h.DB.Delete(&p).Error; err != nil {
+		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
