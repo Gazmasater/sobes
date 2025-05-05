@@ -197,54 +197,20 @@ http://localhost:8080/swagger/index.html
 
 
 
-package models
+curl -X 'DELETE' \
+  'http://localhost:8080/people/2' \
+  -H 'accept: application/json'
 
-type CreatePersonRequest struct {
-	Name       string `json:"name" example:"Dmitriy"`
-	Surname    string `json:"surname" example:"Ushakov"`
-	Patronymic string `json:"patronymic,omitempty" example:"Vasilevich"`
-}
+Request URL
 
+http://localhost:8080/people/2
 
-// CreatePerson godoc
-// @Summary Создать нового человека
-// @Description Принимает имя, фамилию и (опционально) отчество, автоматически определяет пол, возраст и национальность
-// @Tags people
-// @Accept json
-// @Produce json
-// @Param person body models.CreatePersonRequest true "Данные для создания"
-// @Success 200 {object} models.Person
-// @Failure 400 {object} map[string]string
-// @Router /people [post]
-func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
-	var req models.CreatePersonRequest
+Server response
+Code	Details
+204	
+Response headers
 
-	// Декодирование запроса
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// Создание полной структуры Person с автозаполнением
-	p := models.Person{
-		Name:        req.Name,
-		Surname:     req.Surname,
-		Patronymic:  req.Patronymic,
-		Gender:      services.GetGender(req.Name),
-		Age:         services.GetAge(req.Name),
-		Nationality: services.GetNationality(req.Name),
-	}
-
-	// Сохранение в базу данных
-	if err := h.DB.Create(&p).Error; err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Ответ
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(p)
-}
+ date: Mon,05 May 2025 18:24:46 GMT s
 
 
 
