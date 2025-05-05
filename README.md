@@ -196,15 +196,52 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
-package router
+2025/05/05 22:50:54 Received ID: 
+2025/05/05 22:50:54 Error converting ID: strconv.ParseInt: parsing "": invalid syntax
+2025/05/05 22:50:54 "DELETE http://localhost:8080/people/1 HTTP/1.1" from 127.0.0.1:48412 - 400 23B in 45.03µs
 
-import (
-	"people/internal/handlers"
+// DeletePerson godoc
+// @Summary Удалить человека
+// @Description Удаляет запись человека по ID
+// @Tags people
+// @Param id path int true "ID человека"
+// @Success 204 "No Content"
+// @Failure 404 {object} map[string]string
+// @Router /people/{id} [delete]
+func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	// Извлечение id из URL
+	idStr := mux.Vars(r)["id"]
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	httpSwagger "github.com/swaggo/http-swagger"
-)
+	// Логируем полученный id для диагностики
+	log.Printf("Received ID: %s", idStr)
+
+	// Преобразуем id в int64 (bigint)
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		// Логируем ошибку преобразования
+		log.Printf("Error converting ID: %v", err)
+		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	var p models.Person
+	// Ищем запись в базе данных
+	if err := h.DB.First(&p, id).Error; err != nil {
+		log.Printf("Person not found with ID %d", id)
+		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// Удаляем запись
+	if err := h.DB.Delete(&p).Error; err != nil {
+		log.Printf("Error deleting person with ID %d", id)
+		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Ответ без содержимого (204 No Content)
+	w.WriteHeader(http.StatusNoContent)
+}
 
 func SetupRoutes(h handlers.Handler) *chi.Mux {
 	r := chi.NewRouter()
@@ -225,4 +262,5 @@ func SetupRoutes(h handlers.Handler) *chi.Mux {
 
 	return r
 }
+
 
