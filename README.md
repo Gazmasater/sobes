@@ -214,6 +214,27 @@ Response headers
 
 
 
+ // DeletePerson godoc
+// @Summary Удалить человека
+// @Description Удаляет запись человека по ID
+// @Tags people
+// @Param id path int true "ID человека"
+// @Success 204 "No Content"
+// @Failure 404 {object} map[string]string
+// @Router /people/{id} [delete]
+func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+
+	// Удаление записи
+	h.DB.Delete(&models.Person{}, id)
+
+	// Ответ без содержимого
+	w.WriteHeader(http.StatusNoContent)
+}
+
+
+
+
 
 
 
