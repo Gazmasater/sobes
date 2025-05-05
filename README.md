@@ -1,54 +1,88 @@
-✅ 1. Установи swag (если ещё не установлен)
+people/
+├── cmd/
+│   └── server/
+│       └── main.go
+├── internal/
+│   ├── db/
+│   ├── handlers/
+│   └── router/
+│       └── router.go
+
 
 go install github.com/swaggo/swag/cmd/swag@latest
-Убедись, что $GOPATH/bin в PATH, чтобы swag был доступен в терминале.
-
-✅ 2. Установи необходимые пакеты
-
-go get -u github.com/swaggo/gin-swagger         # или echo-swagger, fiber-swagger и т.д.
+go get -u github.com/swaggo/http-swagger
 go get -u github.com/swaggo/files
-Для gin, например:
+
+Проверь, чтобы $(go env GOPATH)/bin был в $PATH:
 
 
-go get -u github.com/swaggo/gin-swagger
-✅ 3. Добавь комментарии для генерации документации
-Пример для main.go:
+export PATH=$PATH:$(go env GOPATH)/bin
 
-go
-Копировать
-Редактировать
-// @title           My API
+2. 📂 Инициализация Swagger
+В корне проекта выполни:
+
+
+swag init
+Создастся папка docs с документацией.
+
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"people/docs" // путь к swagger docs
+	"people/internal/db"
+	"people/internal/handlers"
+	"people/internal/router"
+
+	httpSwagger "github.com/swaggo/http-swagger"
+)
+
+// @title           People API
 // @version         1.0
-// @description     This is a sample server.
+// @description     API for managing people.
 // @host            localhost:8080
 // @BasePath        /
 
 func main() {
-    r := gin.Default()
+	database := db.Init()
+	h := handlers.Handler{DB: database}
 
-    r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r := router.SetupRoutes(h)
 
-    r.Run()
+	// Swagger endpoint
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
+
+	log.Println("API running at :8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
-✅ 4. Сгенерируй документацию
-В корне проекта:
+
+
+4. ✏️ Пример аннотации в обработчике
+📁 internal/handlers/person.go
+
+// CreatePerson godoc
+// @Summary      Create a new person
+// @Description  Add person by JSON
+// @Tags         people
+// @Accept       json
+// @Produce      json
+// @Param        person  body  models.Person  true  "Person"
+// @Success      201     {object}  models.Person
+// @Failure      400     {object}  map[string]string
+// @Router       /people [post]
+func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
+	// ...
+}
+5. 🔁 Обнови Swagger при изменении кода
+Каждый раз после изменения аннотаций:
 
 
 swag init
-Это создаст папку docs/ с docs.go и swagger.json.
-
-✅ 5. Импортируй docs и подключи Swagger
-
-import (
-    "github.com/gin-gonic/gin"
-    "github.com/swaggo/gin-swagger"
-    "github.com/swaggo/files"
-    _ "your_project/docs" // здесь твой модуль/путь к docs
-)
-✅ 6. Готово! Swagger доступен по адресу:
+✅ Swagger будет доступен по адресу:
 
 http://localhost:8080/swagger/index.html
-Хочешь, я покажу пример с твоим фреймворком (Gin, Fiber, Echo и т.д.) или сгенерирую минимальный шаблон?
 
 
 
@@ -56,48 +90,56 @@ http://localhost:8080/swagger/index.html
 
 
 
-Вы сказали:
-Убедись, что $GOPATH/bin в PATH, чтобы swag был доступен в терминале. КАК
+
+package main
+
+import (
+	"log"
+	"net/http"
+	"people/internal/db"
+	"people/internal/handlers"
+	"people/internal/router"
+)
+
+func main() {
+	database := db.Init()
+	h := handlers.Handler{DB: database}
+
+	r := router.SetupRoutes(h)
+
+	log.Println("API running at :8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
+}
 
 
-ChatGPT сказал:
-Чтобы swag был доступен в терминале, нужно добавить $GOPATH/bin в переменную окружения PATH. Вот как это сделать в зависимости от твоей системы.
+package router
 
-🔧 Узнай значение GOPATH
-Выполни в терминале:
+import (
+	"people/internal/handlers"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+)
 
-go env GOPATH
-Обычно это ~/go, если ты не задавал другое.
+func SetupRoutes(h handlers.Handler) *chi.Mux {
+	r := chi.NewRouter()
 
-✅ Добавление $GOPATH/bin в PATH
-Если GOPATH — это ~/go, то тебе нужно добавить ~/go/bin в PATH.
+	// Middleware
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
-Для временного добавления (на текущую сессию):
+	// Routes
+	r.Route("/people", func(r chi.Router) {
+		r.Post("/", h.CreatePerson)
+		r.Get("/", h.GetPeople)
+		r.Put("/{id}", h.UpdatePerson)
+		r.Delete("/{id}", h.DeletePerson)
+	})
 
-export PATH=$PATH:$(go env GOPATH)/bin
-Для постоянного добавления:
-Открой файл конфигурации shell:
-
-Если используешь Bash:
-
-
-nano ~/.bashrc
-Если Zsh:
-
-
-nano ~/.zshrc
-В конец файла добавь:
+	return r
+}
 
 
-export PATH=$PATH:$(go env GOPATH)/bin
-Сохрани файл и применяй изменения:
 
 
-source ~/.bashrc    # или ~/.zshrc
-✅ Проверь
-После этого выполни:
-
-
-which swag
 
