@@ -196,17 +196,25 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
-\d people;
+func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+    idStr := mux.Vars(r)["id"]
+    id, err := strconv.ParseInt(idStr, 10, 64) // Используем ParseInt для соответствия типам
+    if err != nil {
+        http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
+        return
+    }
 
-                           Table "public.people"
-   Column    |  Type  | Collation | Nullable |              Default               
--------------+--------+-----------+----------+------------------------------------
- id          | bigint |           | not null | nextval('people_id_seq'::regclass)
- name        | text   |           |          | 
- surname     | text   |           |          | 
- patronymic  | text   |           |          | 
- gender      | text   |           |          | 
- age         | bigint |           |          | 
- nationality | text   |           |          | 
-:
+    var p models.Person
+    if err := h.DB.First(&p, id).Error; err != nil {
+        http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
+        return
+    }
+
+    if err := h.DB.Delete(&p).Error; err != nil {
+        http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusNoContent)
+}
 
