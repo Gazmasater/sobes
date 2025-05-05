@@ -230,6 +230,8 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 
 curl -X DELETE http://localhost:8080/people/1
 
+	decodedParam, err := url.QueryUnescape(param)
+
 
 
 
