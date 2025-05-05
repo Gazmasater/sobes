@@ -197,24 +197,36 @@ http://localhost:8080/swagger/index.html
 
 
 func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+    // Извлечение id из URL
     idStr := mux.Vars(r)["id"]
-    id, err := strconv.ParseInt(idStr, 10, 64) // Используем ParseInt для соответствия типам
+
+    // Логируем полученный id для диагностики
+    log.Printf("Received ID: %s", idStr)
+
+    // Преобразуем id в int64 (bigint)
+    id, err := strconv.ParseInt(idStr, 10, 64)
     if err != nil {
+        // Логируем ошибку преобразования
+        log.Printf("Error converting ID: %v", err)
         http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
         return
     }
 
     var p models.Person
+    // Ищем запись в базе данных
     if err := h.DB.First(&p, id).Error; err != nil {
+        log.Printf("Person not found with ID %d", id)
         http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
         return
     }
 
+    // Удаляем запись
     if err := h.DB.Delete(&p).Error; err != nil {
+        log.Printf("Error deleting person with ID %d", id)
         http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
         return
     }
 
+    // Ответ без содержимого (204 No Content)
     w.WriteHeader(http.StatusNoContent)
 }
-
