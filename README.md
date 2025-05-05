@@ -230,3 +230,8 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
     // Ответ без содержимого (204 No Content)
     w.WriteHeader(http.StatusNoContent)
 }
+
+
+2025/05/05 22:29:43 Received ID: 
+2025/05/05 22:29:43 Error converting ID: strconv.ParseInt: parsing "": invalid syntax
+2025/05/05 22:29:43 "DELETE http://localhost:8080/people/1 HTTP/1.1" from 127.0.0.1:58320 - 400 23B in 46.732µs
