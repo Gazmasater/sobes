@@ -3,6 +3,7 @@ module people
 go 1.24.0
 
 require (
+	github.com/go-chi/chi/v5 v5.2.1
 	github.com/gorilla/mux v1.8.1
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.10
