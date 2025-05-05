@@ -198,3 +198,15 @@ http://localhost:8080/swagger/index.html
 
 \d people;
 
+                           Table "public.people"
+   Column    |  Type  | Collation | Nullable |              Default               
+-------------+--------+-----------+----------+------------------------------------
+ id          | bigint |           | not null | nextval('people_id_seq'::regclass)
+ name        | text   |           |          | 
+ surname     | text   |           |          | 
+ patronymic  | text   |           |          | 
+ gender      | text   |           |          | 
+ age         | bigint |           |          | 
+ nationality | text   |           |          | 
+:
+
