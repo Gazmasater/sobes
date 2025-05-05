@@ -167,53 +167,78 @@ http://localhost:8080/swagger/index.html
 
 
 
+// GetPeople обрабатывает HTTP-запрос для получения списка людей.
+// Поддерживает фильтрацию по полу (gender), национальности (nationality),
+// а также пагинацию через параметры limit и offset.
 func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
 	var people []models.Person
 	query := h.DB
 
+	// Фильтрация по полу
 	gender := r.URL.Query().Get("gender")
 	if gender != "" {
 		query = query.Where("gender = ?", gender)
 	}
 
+	// Фильтрация по национальности
 	nationality := r.URL.Query().Get("nationality")
 	if nationality != "" {
 		query = query.Where("nationality = ?", nationality)
 	}
 
+	// Получение limit и offset из query-параметров
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 	if limit == 0 {
-		limit = 10
+		limit = 10 // Значение по умолчанию
 	}
 
+	// Выполнение запроса к базе данных
 	query.Limit(limit).Offset(offset).Find(&people)
+
+	// Ответ в формате JSON
 	json.NewEncoder(w).Encode(people)
 }
 
+// UpdatePerson обновляет данные человека по его ID.
+// ID берется из URL, новые данные — из тела запроса.
 func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	var p models.Person
+
+	// Поиск существующей записи
 	if err := h.DB.First(&p, id).Error; err != nil {
 		http.NotFound(w, r)
 		return
 	}
 
 	var updated models.Person
+
+	// Декодирование новых данных из тела запроса
 	if err := json.NewDecoder(r.Body).Decode(&updated); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	// Обновление полей модели
 	h.DB.Model(&p).Updates(updated)
+
+	// Ответ с обновлёнными данными
 	json.NewEncoder(w).Encode(p)
 }
 
+// DeletePerson удаляет запись о человеке по его ID.
+// ID извлекается из URL.
 func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
+
+	// Удаление записи
 	h.DB.Delete(&models.Person{}, id)
+
+	// Ответ без содержимого
 	w.WriteHeader(http.StatusNoContent)
 }
+
 
 
 
