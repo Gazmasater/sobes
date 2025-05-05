@@ -166,6 +166,64 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
+package router
+
+import (
+	"people/internal/handlers"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger"
+)
+
+func SetupRoutes(h handlers.Handler) *chi.Mux {
+	r := chi.NewRouter()
+
+	// Middleware
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	// Routes
+	r.Route("/people", func(r chi.Router) {
+		r.Post("/", h.CreatePerson)
+		r.Get("/", h.GetPeople)
+		r.Put("/{id}", h.UpdatePerson)
+		r.Delete("/{id}", h.DeletePerson)
+	})
+
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
+
+	return r
+}
+
+
+// CreatePerson godoc
+// @Summary      Create a new person
+// @Description  Add person by JSON
+// @Tags         people
+// @Accept       json
+// @Produce      json
+// @Param        person  body  models.Person  true  "Person"
+// @Success      201     {object}  models.Person
+// @Failure      400     {object}  map[string]string
+// @Router       /people [post]
+func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
+	var p models.Person
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	p.Gender = services.GetGender(p.Name)
+	p.Age = services.GetAge(p.Name)
+	p.Nationality = services.GetNationality(p.Name)
+
+	h.DB.Create(&p)
+	json.NewEncoder(w).Encode(p)
+}
+
+
+
 
 
 
