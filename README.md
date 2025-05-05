@@ -223,6 +223,10 @@ func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 }
 
 
+swag init -g cmd/server/main.go
+
+
+
 
 
 
