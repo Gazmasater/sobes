@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func SetupRoutes(h handlers.Handler) *chi.Mux {
@@ -21,6 +22,8 @@ func SetupRoutes(h handlers.Handler) *chi.Mux {
 		r.Put("/{id}", h.UpdatePerson)
 		r.Delete("/{id}", h.DeletePerson)
 	})
+
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	return r
 }
