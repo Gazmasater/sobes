@@ -1,0 +1,73 @@
+1. Установка PostgreSQL на Ubuntu/Debian
+Обновите список пакетов:
+sudo apt update
+
+Установите PostgreSQL:
+sudo apt install postgresql postgresql-contrib
+
+Проверьте статус службы PostgreSQL:
+sudo systemctl status postgresql
+
+Если PostgreSQL не запущен, вы можете запустить его вручную:
+sudo systemctl start postgresql
+
+Убедитесь, что PostgreSQL работает:
+Для этого выполните команду:
+psql --version
+
+3. Основные команды для работы с PostgreSQL:
+Подключение к базе данных PostgreSQL:
+
+Чтобы подключиться к PostgreSQL, используйте команду psql:
+sudo -u postgres psql
+
+Создание базы данных:
+Для создания базы данных выполните команду:
+sudo -u postgres createdb mydatabase
+
+\conninfo   // Она покажет информацию о текущем подключении, включая пользователя, базу, хост и порт
+
+
+Для создания нового пользователя:
+sudo -u postgres createuser myuser --pwprompt --interactive
+
+Изменение пароля пользователя:
+Чтобы изменить пароль пользователя myuser:
+
+sudo -u postgres psql
+ALTER USER myuser WITH PASSWORD 'newpassword';
+
+Выйти из PostgreSQL:
+Чтобы выйти из консоли PostgreSQL, выполните команду:
+\q
+
+4. Управление PostgreSQL с помощью systemctl
+Запуск службы PostgreSQL:
+sudo systemctl start postgresql
+
+Остановка службы PostgreSQL:
+sudo systemctl stop postgresql
+
+Перезапуск службы PostgreSQL:
+sudo systemctl restart postgresql
+
+\list
+
+sudo -u postgres psql people
+
+\dt
+SELECT * FROM events;
+
+
+
+CREATE TABLE categories (
+    id SERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE events (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    category_id INT REFERENCES categories(id),
+    UNIQUE(name, category_id)
+);
