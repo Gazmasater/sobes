@@ -202,26 +202,21 @@ func SetupRoutes(h handlers.Handler) *chi.Mux {
     r.Use(middleware.Logger)
     r.Use(middleware.Recoverer)
 
-    // Проверяем правильность маршрута с ID
-    r.Delete("/people/{id}", func(w http.ResponseWriter, r *http.Request) {
-        log.Printf("Matched route for deleting: %s", r.URL.Path)
-        // Печать ID параметра
-        id := chi.URLParam(r, "id")
-        log.Printf("Extracted ID param: %s", id)
-        
-        if id == "" {
-            log.Printf("No ID extracted from the URL")
-        }
-
-        h.DeletePerson(w, r)  // Вызов обработчика
+    r.Route("/people", func(r chi.Router) {
+        r.Post("/", h.CreatePerson)
+        r.Get("/", h.GetPeople)
+        r.Delete("/{id}", h.DeletePerson)  // Используем прямую передачу параметра в обработчик
     })
 
     return r
 }
 
+
 func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-    log.Printf("Request path: %s", r.URL.Path)
+    // Извлекаем ID параметр из URL
     idStr := chi.URLParam(r, "id")
+
+    log.Printf("Request path: %s", r.URL.Path)
     log.Printf("Received ID: %s", idStr)
 
     if idStr == "" {
@@ -230,6 +225,7 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // Преобразуем ID в число
     id, err := strconv.ParseInt(idStr, 10, 64)
     if err != nil {
         log.Printf("Error converting ID: %v", err)
@@ -238,28 +234,25 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
     }
 
     var p models.Person
+    // Ищем человека по ID
     if err := h.DB.First(&p, id).Error; err != nil {
         log.Printf("Person not found with ID %d", id)
         http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
         return
     }
 
+    // Удаляем человека
     if err := h.DB.Delete(&p).Error; err != nil {
         log.Printf("Error deleting person with ID %d", id)
         http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
         return
     }
 
+    // Возвращаем статус 204 (No Content)
     w.WriteHeader(http.StatusNoContent)
 }
 
-025/05/06 01:24:21 API running at :8080
-2025/05/06 01:24:28 Matched route for deleting: /people/2
-2025/05/06 01:24:28 Extracted ID param: 2
-2025/05/06 01:24:28 Request path: /people/2
-2025/05/06 01:24:28 Received ID: 
-2025/05/06 01:24:28 No ID provided in the URL!
-2025/05/06 01:24:28 "DELETE http://localhost:8080/people/2 HTTP/1.1" from [::1]:36232 - 400 23B in 215.334µs
+
 
 
 
