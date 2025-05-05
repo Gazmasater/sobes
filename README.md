@@ -84,6 +84,36 @@ swag init
 
 http://localhost:8080/swagger/index.html
 
+func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
+	var people []models.Person
+	query := h.DB
+
+	// Фильтрация по полу
+	gender := r.URL.Query().Get("gender")
+	if gender != "" {
+		query = query.Where("gender = ?", gender)
+	}
+
+	// Фильтрация по национальности
+	nationality := r.URL.Query().Get("nationality")
+	if nationality != "" {
+		query = query.Where("nationality = ?", nationality)
+	}
+
+	// Получение limit и offset из query-параметров
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	if limit == 0 {
+		limit = 10 // Значение по умолчанию
+	}
+
+	// Выполнение запроса к базе данных
+	query.Limit(limit).Offset(offset).Find(&people)
+
+	// Ответ в формате JSON
+	json.NewEncoder(w).Encode(people)
+}
+
 
 
 
