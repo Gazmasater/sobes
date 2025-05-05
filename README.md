@@ -197,19 +197,54 @@ http://localhost:8080/swagger/index.html
 
 
 
-// GetPeople godoc
-// @Summary Получить список людей
-// @Description Возвращает список людей с возможностью фильтрации по полу и национальности, а также с пагинацией
+package models
+
+type CreatePersonRequest struct {
+	Name       string `json:"name" example:"Dmitriy"`
+	Surname    string `json:"surname" example:"Ushakov"`
+	Patronymic string `json:"patronymic,omitempty" example:"Vasilevich"`
+}
+
+
+// CreatePerson godoc
+// @Summary Создать нового человека
+// @Description Принимает имя, фамилию и (опционально) отчество, автоматически определяет пол, возраст и национальность
 // @Tags people
 // @Accept json
 // @Produce json
-// @Param gender query string false "Пол (например, male, female)"
-// @Param nationality query string false "Национальность (например, Russian, American)"
-// @Param limit query int false "Количество возвращаемых записей (по умолчанию 10)"
-// @Param offset query int false "Смещение (offset) для пагинации"
-// @Success 200 {array} models.Person
-// @Failure 500 {object} map[string]string
-// @Router /people [get]
+// @Param person body models.CreatePersonRequest true "Данные для создания"
+// @Success 200 {object} models.Person
+// @Failure 400 {object} map[string]string
+// @Router /people [post]
+func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
+	var req models.CreatePersonRequest
+
+	// Декодирование запроса
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Создание полной структуры Person с автозаполнением
+	p := models.Person{
+		Name:        req.Name,
+		Surname:     req.Surname,
+		Patronymic:  req.Patronymic,
+		Gender:      services.GetGender(req.Name),
+		Age:         services.GetAge(req.Name),
+		Nationality: services.GetNationality(req.Name),
+	}
+
+	// Сохранение в базу данных
+	if err := h.DB.Create(&p).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Ответ
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(p)
+}
 
 
 
