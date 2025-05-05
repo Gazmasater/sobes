@@ -196,8 +196,36 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
+func main() {
+	database := db.Init()
+	h := handlers.Handler{DB: database}
+
+	r := router.SetupRoutes(h)
+
+	log.Println("API running at :8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
+}
+func SetupRoutes(h handlers.Handler) *chi.Mux {
+	r := chi.NewRouter()
+
+	// Middleware
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	// Routes
+	r.Route("/people", func(r chi.Router) {
+		r.Post("/", h.CreatePerson)
+		r.Get("/", h.GetPeople)
+		//	r.Put("/{id}", h.UpdatePerson)
+		r.Delete("/{id}", h.DeletePerson)
+	})
+
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
+
+	return r
+}
 func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id") // <-- заменил mux.Vars на chi.URLParam
+	idStr := chi.URLParam(r, "id")
 
 	log.Printf("Received ID: %s", idStr)
 
@@ -224,13 +252,6 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-2025/05/05 23:14:26 Received ID: 
-2025/05/05 23:14:26 Error converting ID: strconv.ParseInt: parsing "": invalid syntax
-2025/05/05 23:14:26 "DELETE http://localhost:8080/people/1 HTTP/1.1" from 127.0.0.1:32806 - 400 23B in 60.428µs
-
-curl -X DELETE http://localhost:8080/people/1
-
-	decodedParam, err := url.QueryUnescape(param)
 
 
 
