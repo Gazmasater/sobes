@@ -206,6 +206,12 @@ r.Use(func(next http.Handler) http.Handler {
 	})
 })
 
+025/05/06 00:21:47 Request path: /people/1
+2025/05/06 00:21:47 ID param: 
+2025/05/06 00:21:47 Received ID: 
+2025/05/06 00:21:47 Error converting ID: strconv.ParseInt: parsing "": invalid syntax
+2025/05/06 00:21:47 "DELETE http://localhost:8080/people/1 HTTP/1.1" from [::1]:46102 - 400 23B in 37.593µs
+
 
 
 
