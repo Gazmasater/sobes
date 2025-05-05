@@ -166,74 +166,55 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
-package router
 
-import (
-	"people/internal/handlers"
+func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
+	var people []models.Person
+	query := h.DB
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	httpSwagger "github.com/swaggo/http-swagger"
-)
+	gender := r.URL.Query().Get("gender")
+	if gender != "" {
+		query = query.Where("gender = ?", gender)
+	}
 
-func SetupRoutes(h handlers.Handler) *chi.Mux {
-	r := chi.NewRouter()
+	nationality := r.URL.Query().Get("nationality")
+	if nationality != "" {
+		query = query.Where("nationality = ?", nationality)
+	}
 
-	// Middleware
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	if limit == 0 {
+		limit = 10
+	}
 
-	// Routes
-	r.Route("/people", func(r chi.Router) {
-		r.Post("/", h.CreatePerson)
-		r.Get("/", h.GetPeople)
-		r.Put("/{id}", h.UpdatePerson)
-		r.Delete("/{id}", h.DeletePerson)
-	})
-
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
-
-	return r
+	query.Limit(limit).Offset(offset).Find(&people)
+	json.NewEncoder(w).Encode(people)
 }
 
-
-// CreatePerson godoc
-// @Summary      Create a new person
-// @Description  Add person by JSON
-// @Tags         people
-// @Accept       json
-// @Produce      json
-// @Param        person  body  models.Person  true  "Person"
-// @Success      201     {object}  models.Person
-// @Failure      400     {object}  map[string]string
-// @Router       /people [post]
-func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
 	var p models.Person
-	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+	if err := h.DB.First(&p, id).Error; err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	var updated models.Person
+	if err := json.NewDecoder(r.Body).Decode(&updated); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	p.Gender = services.GetGender(p.Name)
-	p.Age = services.GetAge(p.Name)
-	p.Nationality = services.GetNationality(p.Name)
-
-	h.DB.Create(&p)
+	h.DB.Model(&p).Updates(updated)
 	json.NewEncoder(w).Encode(p)
 }
 
+func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	h.DB.Delete(&models.Person{}, id)
+	w.WriteHeader(http.StatusNoContent)
+}
 
-swag init -g cmd/server/main.go
-
-gaz358@gaz358-BOD-WXX9:~/myprog/test$ swag init -g cmd/main.go
-2025/05/05 16:17:47 Generate swagger docs....
-2025/05/05 16:17:47 Generate general API Info, search dir:./
-2025/05/05 16:17:47 warning: failed to get package name in dir: ./, error: execute go list command, exit status 1, stdout:, stderr:no Go files in /home/gaz358/myprog/test
-2025/05/05 16:17:47 Generating models.Person
-2025/05/05 16:17:47 create docs.go at docs/docs.go
-2025/05/05 16:17:47 create swagger.json at docs/swagger.json
-2025/05/05 16:17:47 create swagger.yaml at docs/swagger.yaml
-gaz358@gaz358-BOD-WXX9:~/myprog/test$ 
 
 
 
