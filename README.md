@@ -140,6 +140,15 @@ func SetupRoutes(h handlers.Handler) *chi.Mux {
 }
 
 
+gaz358@gaz358-BOD-WXX9:~/myprog/test/cmd$ swag init
+2025/05/05 15:39:36 Generate swagger docs....
+2025/05/05 15:39:36 Generate general API Info, search dir:./
+2025/05/05 15:39:36 create docs.go at docs/docs.go
+2025/05/05 15:39:36 create swagger.json at docs/swagger.json
+2025/05/05 15:39:36 create swagger.yaml at docs/swagger.yaml
+gaz358@gaz358-BOD-WXX9:~/myprog/test/cmd$ 
+
+
 
 
 
