@@ -201,11 +201,12 @@ http://localhost:8080/swagger/index.html
 
 func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]
-	id, err := strconv.Atoi(idStr)
+	idUint, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
 		return
 	}
+	id := uint(idUint)
 
 	var p models.Person
 	if err := h.DB.First(&p, id).Error; err != nil {
@@ -213,7 +214,6 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ЖЁСТКОЕ УДАЛЕНИЕ
 	if err := h.DB.Delete(&p).Error; err != nil {
 		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
 		return
@@ -222,23 +222,3 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-
-curl -X 'DELETE' \
-  'http://localhost:8080/people/1' \
-  -H 'accept: application/json'
-
-Request URL
-
-http://localhost:8080/people/1
-
-Server response
-Code	Details
-400
-Undocumented
-	
-
-Error: Bad Request
-Response body
-Download
-
-{"error":"invalid ID"}
