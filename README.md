@@ -196,42 +196,28 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
-package main
-
-import (
-	"log"
-	"net/http"
-	"strconv"
-
-	"github.com/go-chi/chi/v5"
-)
-
 func main() {
+	database := db.Init()
+	h := handlers.Handler{DB: database}
+
 	r := chi.NewRouter()
-	r.Delete("/people/{id}", deletePersonHandler)
 
-	log.Println("Server is running on :8080")
-	http.ListenAndServe(":8080", r)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	r.Route("/people", func(r chi.Router) {
+		r.Post("/", h.CreatePerson)
+		r.Get("/", h.GetPeople)
+		r.Delete("/{id}", h.DeletePerson) // Используем прямую передачу параметра в обработчик
+
+	})
+
+	//	r := handlers.SetupRoutes(h)
+
+	log.Println("API running at :8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
-func deletePersonHandler(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	log.Printf("Extracted id: %s", idStr)
-
-	if idStr == "" {
-		http.Error(w, "missing id", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
-		return
-	}
-
-	log.Printf("Successfully parsed id: %d", id)
-	w.WriteHeader(http.StatusNoContent)
-}
 
 
 
