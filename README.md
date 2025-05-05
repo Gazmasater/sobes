@@ -196,61 +196,23 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
-func main() {
-	database := db.Init()
-	h := handlers.Handler{DB: database}
-
-	r := router.SetupRoutes(h)
-
-	log.Println("API running at :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
-}
 func SetupRoutes(h handlers.Handler) *chi.Mux {
-	r := chi.NewRouter()
+    r := chi.NewRouter()
 
-	// Middleware
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+    r.Use(middleware.Logger)
+    r.Use(middleware.Recoverer)
 
-	r.Post("/people/", h.CreatePerson)
-	r.Get("/", h.GetPeople)
-	//	r.Put("/{id}", h.UpdatePerson)
-	r.Delete("/people/{id}", h.DeletePerson)
+    // Логируем путь запроса
+    r.Route("/people", func(r chi.Router) {
+        r.Post("/", h.CreatePerson)
+        r.Get("/", h.GetPeople)
+        r.Delete("/{id}", func(w http.ResponseWriter, r *http.Request) {
+            log.Printf("Matched route for deleting: %s", r.URL.Path)
+            h.DeletePerson(w, r)
+        })
+    })
 
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
-
-	return r
-}
-func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-
-	log.Printf("Request path: %s", r.URL.Path)
-	log.Printf("ID param: %s", chi.URLParam(r, "id"))
-
-	idStr := chi.URLParam(r, "id")
-
-	log.Printf("Received ID: %s", idStr)
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		log.Printf("Error converting ID: %v", err)
-		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
-		return
-	}
-
-	var p models.Person
-	if err := h.DB.First(&p, id).Error; err != nil {
-		log.Printf("Person not found with ID %d", id)
-		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
-		return
-	}
-
-	if err := h.DB.Delete(&p).Error; err != nil {
-		log.Printf("Error deleting person with ID %d", id)
-		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+    return r
 }
 
 
