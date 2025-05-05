@@ -253,6 +253,14 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusNoContent)
 }
 
+025/05/06 01:24:21 API running at :8080
+2025/05/06 01:24:28 Matched route for deleting: /people/2
+2025/05/06 01:24:28 Extracted ID param: 2
+2025/05/06 01:24:28 Request path: /people/2
+2025/05/06 01:24:28 Received ID: 
+2025/05/06 01:24:28 No ID provided in the URL!
+2025/05/06 01:24:28 "DELETE http://localhost:8080/people/2 HTTP/1.1" from [::1]:36232 - 400 23B in 215.334µs
+
 
 
 
