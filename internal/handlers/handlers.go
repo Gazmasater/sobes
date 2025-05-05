@@ -17,27 +17,42 @@ type Handler struct {
 }
 
 // CreatePerson godoc
-// @Summary      Create a new person
-// @Description  Add person by JSON
-// @Tags         people
-// @Accept       json
-// @Produce      json
-// @Param        person  body  models.Person  true  "Person"
-// @Success      201     {object}  models.Person
-// @Failure      400     {object}  map[string]string
-// @Router       /people [post]
+// @Summary Создать нового человека
+// @Description Принимает имя, фамилию и (опционально) отчество, автоматически определяет пол, возраст и национальность
+// @Tags people
+// @Accept json
+// @Produce json
+// @Param person body models.CreatePersonRequest true "Данные для создания"
+// @Success 200 {object} models.Person
+// @Failure 400 {object} map[string]string
+// @Router /people [post]
 func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
-	var p models.Person
-	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+	var req models.CreatePersonRequest
+
+	// Декодирование запроса
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	p.Gender = services.GetGender(p.Name)
-	p.Age = services.GetAge(p.Name)
-	p.Nationality = services.GetNationality(p.Name)
+	// Создание полной структуры Person с автозаполнением
+	p := models.Person{
+		Name:        req.Name,
+		Surname:     req.Surname,
+		Patronymic:  req.Patronymic,
+		Gender:      services.GetGender(req.Name),
+		Age:         services.GetAge(req.Name),
+		Nationality: services.GetNationality(req.Name),
+	}
 
-	h.DB.Create(&p)
+	// Сохранение в базу данных
+	if err := h.DB.Create(&p).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Ответ
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(p)
 }
 
@@ -130,11 +145,24 @@ func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} map[string]string
 // @Router /people/{id} [delete]
 func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
+	idStr := mux.Vars(r)["id"]
+	idUint, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
+		return
+	}
+	id := uint(idUint)
 
-	// Удаление записи
-	h.DB.Delete(&models.Person{}, id)
+	var p models.Person
+	if err := h.DB.First(&p, id).Error; err != nil {
+		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
+		return
+	}
 
-	// Ответ без содержимого
+	if err := h.DB.Delete(&p).Error; err != nil {
+		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }

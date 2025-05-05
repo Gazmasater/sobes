@@ -10,3 +10,9 @@ type Person struct {
 	Age         int    `json:"age"`
 	Nationality string `json:"nationality"`
 }
+
+type CreatePersonRequest struct {
+	Name       string `json:"name" example:"Dmitriy"`
+	Surname    string `json:"surname" example:"Ushakov"`
+	Patronymic string `json:"patronymic,omitempty" example:"Vasilevich"`
+}

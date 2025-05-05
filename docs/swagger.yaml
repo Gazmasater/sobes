@@ -1,5 +1,17 @@
 basePath: /
 definitions:
+  models.CreatePersonRequest:
+    properties:
+      name:
+        example: Dmitriy
+        type: string
+      patronymic:
+        example: Vasilevich
+        type: string
+      surname:
+        example: Ushakov
+        type: string
+    type: object
   models.Person:
     properties:
       age:
@@ -68,19 +80,20 @@ paths:
     post:
       consumes:
       - application/json
-      description: Add person by JSON
+      description: Принимает имя, фамилию и (опционально) отчество, автоматически
+        определяет пол, возраст и национальность
       parameters:
-      - description: Person
+      - description: Данные для создания
         in: body
         name: person
         required: true
         schema:
-          $ref: '#/definitions/models.Person'
+          $ref: '#/definitions/models.CreatePersonRequest'
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/models.Person'
         "400":
@@ -89,7 +102,7 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Create a new person
+      summary: Создать нового человека
       tags:
       - people
   /people/{id}:

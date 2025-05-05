@@ -76,7 +76,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Add person by JSON",
+                "description": "Принимает имя, фамилию и (опционально) отчество, автоматически определяет пол, возраст и национальность",
                 "consumes": [
                     "application/json"
                 ],
@@ -86,21 +86,21 @@ const docTemplate = `{
                 "tags": [
                     "people"
                 ],
-                "summary": "Create a new person",
+                "summary": "Создать нового человека",
                 "parameters": [
                     {
-                        "description": "Person",
+                        "description": "Данные для создания",
                         "name": "person",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Person"
+                            "$ref": "#/definitions/models.CreatePersonRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.Person"
                         }
@@ -208,6 +208,23 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "models.CreatePersonRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "Dmitriy"
+                },
+                "patronymic": {
+                    "type": "string",
+                    "example": "Vasilevich"
+                },
+                "surname": {
+                    "type": "string",
+                    "example": "Ushakov"
+                }
+            }
+        },
         "models.Person": {
             "type": "object",
             "properties": {
