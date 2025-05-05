@@ -197,43 +197,35 @@ http://localhost:8080/swagger/index.html
 
 
 
-// UpdatePerson godoc
-// @Summary Обновить данные человека
-// @Description Обновляет информацию о человеке по ID
-// @Tags people
-// @Accept  json
-// @Produce  json
-// @Param id path int true "ID человека"
-// @Param person body models.Person true "Обновлённые данные"
-// @Success 200 {object} models.Person
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Router /people/{id} [put]
+func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
+	var people []models.Person
+	query := h.DB
 
+	// Фильтрация по полу
+	gender := r.URL.Query().Get("gender")
+	if gender != "" {
+		query = query.Where("gender = ?", gender)
+	}
 
+	// Фильтрация по национальности
+	nationality := r.URL.Query().Get("nationality")
+	if nationality != "" {
+		query = query.Where("nationality = ?", nationality)
+	}
 
-// UpdatePerson godoc
-// @Summary Обновить данные человека
-// @Description Обновляет информацию о человеке по ID
-// @Tags people
-// @Accept  json
-// @Produce  json
-// @Param id path int true "ID человека"
-// @Param person body models.Person true "Обновлённые данные"
-// @Success 200 {object} models.Person
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Router /people/{id} [put]
+	// Получение limit и offset из query-параметров
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	if limit == 0 {
+		limit = 10 // Значение по умолчанию
+	}
 
+	// Выполнение запроса к базе данных
+	query.Limit(limit).Offset(offset).Find(&people)
 
-// DeletePerson godoc
-// @Summary Удалить человека
-// @Description Удаляет запись человека по ID
-// @Tags people
-// @Param id path int true "ID человека"
-// @Success 204 "No Content"
-// @Failure 404 {object} map[string]string
-// @Router /people/{id} [delete]
+	// Ответ в формате JSON
+	json.NewEncoder(w).Encode(people)
+}
 
 
 
