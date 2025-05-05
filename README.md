@@ -196,79 +196,42 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
-func SetupRoutes(h handlers.Handler) *chi.Mux {
-    r := chi.NewRouter()
+package main
 
-    r.Use(middleware.Logger)
-    r.Use(middleware.Recoverer)
+import (
+	"log"
+	"net/http"
+	"strconv"
 
-    r.Route("/people", func(r chi.Router) {
-        r.Post("/", h.CreatePerson)
-        r.Get("/", h.GetPeople)
-        r.Delete("/{id}", h.DeletePerson)  // Используем прямую передачу параметра в обработчик
-    })
+	"github.com/go-chi/chi/v5"
+)
 
-    return r
+func main() {
+	r := chi.NewRouter()
+	r.Delete("/people/{id}", deletePersonHandler)
+
+	log.Println("Server is running on :8080")
+	http.ListenAndServe(":8080", r)
 }
 
+func deletePersonHandler(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	log.Printf("Extracted id: %s", idStr)
 
-func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-    // Извлекаем ID параметр из URL
-    idStr := chi.URLParam(r, "id")
+	if idStr == "" {
+		http.Error(w, "missing id", http.StatusBadRequest)
+		return
+	}
 
-    log.Printf("Request path: %s", r.URL.Path)
-    log.Printf("Received ID: %s", idStr)
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
 
-    if idStr == "" {
-        log.Printf("No ID provided in the URL!")
-        http.Error(w, `{"error":"missing ID"}`, http.StatusBadRequest)
-        return
-    }
-
-    // Преобразуем ID в число
-    id, err := strconv.ParseInt(idStr, 10, 64)
-    if err != nil {
-        log.Printf("Error converting ID: %v", err)
-        http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
-        return
-    }
-
-    var p models.Person
-    // Ищем человека по ID
-    if err := h.DB.First(&p, id).Error; err != nil {
-        log.Printf("Person not found with ID %d", id)
-        http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
-        return
-    }
-
-    // Удаляем человека
-    if err := h.DB.Delete(&p).Error; err != nil {
-        log.Printf("Error deleting person with ID %d", id)
-        http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
-        return
-    }
-
-    // Возвращаем статус 204 (No Content)
-    w.WriteHeader(http.StatusNoContent)
+	log.Printf("Successfully parsed id: %d", id)
+	w.WriteHeader(http.StatusNoContent)
 }
-
-
-
-r.Delete("/crud-items/{id}", func(w http.ResponseWriter, r *http.Request) {
-        idStr := chi.URLParam(r, "id")
-        id, err := strconv.Atoi(idStr)
-        if err != nil {
-            w.WriteHeader(http.StatusBadRequest)
-            w.Write([]byte(err.Error()))
-            return
-        }
-        
-        if _, ok := storage[id]; !ok {
-            w.WriteHeader(http.StatusNotFound)
-            return
-        }
-        delete(storage, id)
-    })
 
 
 
