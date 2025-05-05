@@ -225,6 +225,16 @@ func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 
 swag init -g cmd/server/main.go
 
+gaz358@gaz358-BOD-WXX9:~/myprog/test$ swag init -g cmd/main.go
+2025/05/05 16:17:47 Generate swagger docs....
+2025/05/05 16:17:47 Generate general API Info, search dir:./
+2025/05/05 16:17:47 warning: failed to get package name in dir: ./, error: execute go list command, exit status 1, stdout:, stderr:no Go files in /home/gaz358/myprog/test
+2025/05/05 16:17:47 Generating models.Person
+2025/05/05 16:17:47 create docs.go at docs/docs.go
+2025/05/05 16:17:47 create swagger.json at docs/swagger.json
+2025/05/05 16:17:47 create swagger.yaml at docs/swagger.yaml
+gaz358@gaz358-BOD-WXX9:~/myprog/test$ 
+
 
 
 
