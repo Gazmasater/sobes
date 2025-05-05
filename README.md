@@ -196,29 +196,5 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
-
-
-
-func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	idStr := mux.Vars(r)["id"]
-	idUint, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
-		return
-	}
-	id := uint(idUint)
-
-	var p models.Person
-	if err := h.DB.First(&p, id).Error; err != nil {
-		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
-		return
-	}
-
-	if err := h.DB.Delete(&p).Error; err != nil {
-		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
+\d people;
 
