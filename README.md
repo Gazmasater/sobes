@@ -254,6 +254,23 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 
 
 
+r.Delete("/crud-items/{id}", func(w http.ResponseWriter, r *http.Request) {
+        idStr := chi.URLParam(r, "id")
+        id, err := strconv.Atoi(idStr)
+        if err != nil {
+            w.WriteHeader(http.StatusBadRequest)
+            w.Write([]byte(err.Error()))
+            return
+        }
+        
+        if _, ok := storage[id]; !ok {
+            w.WriteHeader(http.StatusNotFound)
+            return
+        }
+        delete(storage, id)
+    })
+
+
 
 
 
