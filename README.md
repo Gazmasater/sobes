@@ -140,13 +140,32 @@ func SetupRoutes(h handlers.Handler) *chi.Mux {
 }
 
 
-gaz358@gaz358-BOD-WXX9:~/myprog/test/cmd$ swag init
-2025/05/05 15:39:36 Generate swagger docs....
-2025/05/05 15:39:36 Generate general API Info, search dir:./
-2025/05/05 15:39:36 create docs.go at docs/docs.go
-2025/05/05 15:39:36 create swagger.json at docs/swagger.json
-2025/05/05 15:39:36 create swagger.yaml at docs/swagger.yaml
-gaz358@gaz358-BOD-WXX9:~/myprog/test/cmd$ 
+
+✅ 1. Импортировать сгенерированные docs
+В файле cmd/server/main.go (или где у тебя точка входа), добавь:
+
+
+import _ "people/docs" // Путь к пакету с docs, без этого Swagger не заработает
+Если у тебя проект в ~/myprog/test, а go.mod начинается с module people, то путь будет корректен.
+
+✅ 2. Добавить маршруты Swagger в Chi
+В router/router.go добавь в самый конец:
+
+
+import (
+	httpSwagger "github.com/swaggo/http-swagger"
+)
+
+// ...
+
+r.Get("/swagger/*", httpSwagger.WrapHandler)
+✅ 3. Пересобери и запусти
+
+go run ./cmd/server
+🌐 Swagger доступен по адресу:
+http://localhost:8080/swagger/index.html
+
+
 
 
 
