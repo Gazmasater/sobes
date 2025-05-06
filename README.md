@@ -196,33 +196,88 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
-func main() {
-	database := db.Init()
-	h := handlers.Handler{DB: database}
+package router
 
-	r := setupRoutes(h)
-	//	r := handlers.SetupRoutes(h)
+import (
+	"people/internal/handlers"
 
-	log.Println("API running at :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
-}
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
+)
 
-func setupRoutes(H handlers.Handler) *chi.Mux {
+func SetupRoutes(h handlers.Handler) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
 	r.Route("/people", func(r chi.Router) {
-		r.Post("/", H.CreatePerson)
-		r.Get("/", H.GetPeople)
-		r.Delete("/{id}", H.DeletePerson) // Используем прямую передачу параметра в обработчик
+		r.Post("/", h.CreatePerson)
+		r.Get("/", h.GetPeople)
+		r.Delete("/{id}", h.DeletePerson) // Используем прямую передачу параметра в обработчик
 
 	})
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	return r
+}
+
+
+package handlers
+type Handler struct {
+	DB *gorm.DB
+}
+func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	// Извлекаем ID параметр из URL
+	idStr := chi.URLParam(r, "id")
+	log.Printf("Request path: %s", r.URL.Path)
+	log.Printf("Received ID: %s", idStr)
+
+	if idStr == "" {
+		log.Printf("No ID provided in the URL!")
+		http.Error(w, `{"error":"missing ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Преобразуем ID в число
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		log.Printf("Error converting ID: %v", err)
+		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	var p models.Person
+	// Ищем человека по ID
+	if err := h.DB.First(&p, id).Error; err != nil {
+		log.Printf("Person not found with ID %d", id)
+		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// Удаляем человека
+	if err := h.DB.Delete(&p).Error; err != nil {
+		log.Printf("Error deleting person with ID %d", id)
+		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Возвращаем статус 204 (No Content)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+
+package main
+func main() {
+	database := db.Init()
+	h := handlers.Handler{DB: database}
+
+	r := router.SetupRoutes(h)
+
+	log.Println("API running at :8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 
