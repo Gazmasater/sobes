@@ -196,89 +196,31 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
-package router
-
-import (
-	"people/internal/handlers"
-
-	"github.com/go-chi/chi/middleware"
-	"github.com/go-chi/chi/v5"
-	httpSwagger "github.com/swaggo/http-swagger"
-)
-
-func SetupRoutes(h handlers.Handler) *chi.Mux {
-	r := chi.NewRouter()
-
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	r.Route("/people", func(r chi.Router) {
-		r.Post("/", h.CreatePerson)
-		r.Get("/", h.GetPeople)
-		r.Delete("/{id}", h.DeletePerson) // Используем прямую передачу параметра в обработчик
-
-	})
-
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
-
-	return r
-}
-
-
-package handlers
-type Handler struct {
-	DB *gorm.DB
-}
-func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	// Извлекаем ID параметр из URL
-	idStr := chi.URLParam(r, "id")
-	log.Printf("Request path: %s", r.URL.Path)
-	log.Printf("Received ID: %s", idStr)
-
-	if idStr == "" {
-		log.Printf("No ID provided in the URL!")
-		http.Error(w, `{"error":"missing ID"}`, http.StatusBadRequest)
-		return
-	}
-
-	// Преобразуем ID в число
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		log.Printf("Error converting ID: %v", err)
-		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
-		return
-	}
-
+func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
 	var p models.Person
-	// Ищем человека по ID
+
+	// Поиск существующей записи
 	if err := h.DB.First(&p, id).Error; err != nil {
-		log.Printf("Person not found with ID %d", id)
-		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
+		http.NotFound(w, r)
 		return
 	}
 
-	// Удаляем человека
-	if err := h.DB.Delete(&p).Error; err != nil {
-		log.Printf("Error deleting person with ID %d", id)
-		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+	var updated models.Person
+
+	// Декодирование новых данных из тела запроса
+	if err := json.NewDecoder(r.Body).Decode(&updated); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Возвращаем статус 204 (No Content)
-	w.WriteHeader(http.StatusNoContent)
+	// Обновление полей модели
+	h.DB.Model(&p).Updates(updated)
+
+	// Ответ с обновлёнными данными
+	json.NewEncoder(w).Encode(p)
 }
 
-
-package main
-func main() {
-	database := db.Init()
-	h := handlers.Handler{DB: database}
-
-	r := router.SetupRoutes(h)
-
-	log.Println("API running at :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
-}
 
 
 
