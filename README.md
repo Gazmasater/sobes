@@ -200,23 +200,31 @@ func main() {
 	database := db.Init()
 	h := handlers.Handler{DB: database}
 
+	r := setupRoutes(h)
+	//	r := handlers.SetupRoutes(h)
+
+	log.Println("API running at :8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
+}
+
+func setupRoutes(H handlers.Handler) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
 	r.Route("/people", func(r chi.Router) {
-		r.Post("/", h.CreatePerson)
-		r.Get("/", h.GetPeople)
-		r.Delete("/{id}", h.DeletePerson) // Используем прямую передачу параметра в обработчик
+		r.Post("/", H.CreatePerson)
+		r.Get("/", H.GetPeople)
+		r.Delete("/{id}", H.DeletePerson) // Используем прямую передачу параметра в обработчик
 
 	})
 
-	//	r := handlers.SetupRoutes(h)
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
-	log.Println("API running at :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	return r
 }
+
 
 
 
