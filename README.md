@@ -87,42 +87,15 @@ http://localhost:8080/swagger/index.html
 
 go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 golangci-lint --version
-golangci-lint run
+golangci-lint runsrv := &http.Server{
+    Addr:         ":" + port,
+    Handler:      r,
+    ReadTimeout:  10 * time.Second,
+    WriteTimeout: 10 * time.Second,
+}
+log.Fatal(srv.ListenAndServe())
 
 
-gaz358@gaz358-BOD-WXX9:~/myprog/test$ golangci-lint run
-WARN The linter 'exportloopref' is deprecated (since v1.60.2) due to: Since Go1.22 (loopvar) this linter is no longer relevant. Replaced by copyloopvar. 
-ERRO [linters_context] exportloopref: This linter is fully inactivated: it will not produce any reports. 
-internal/handlers/handlers.go:80:27: Error return value of `(*encoding/json.Encoder).Encode` is not checked (errcheck)
-        json.NewEncoder(w).Encode(p)
-                                 ^
-internal/handlers/handlers.go:123:27: Error return value of `(*encoding/json.Encoder).Encode` is not checked (errcheck)
-        json.NewEncoder(w).Encode(people)
-                                 ^
-internal/handlers/handlers.go:180:27: Error return value of `(*encoding/json.Encoder).Encode` is not checked (errcheck)
-        json.NewEncoder(w).Encode(existing)
-                                 ^
-internal/services/services.go:58:10: string `unknown` has 3 occurrences, make it a constant (goconst)
-                return "unknown"
-                       ^
-main.go:39:12: G114: Use of net/http serve function that has no support for setting timeouts (gosec)
-        log.Fatal(http.ListenAndServe(":"+port, r))
-                  ^
-internal/services/services.go:16:23: net/http.Get must not be called (noctx)
-        resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
-                             ^
-internal/services/services.go:35:23: net/http.Get must not be called (noctx)
-        resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
-                             ^
-internal/services/services.go:56:23: net/http.Get must not be called (noctx)
-        resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
-                             ^
-internal/router/router.go:23:2: unnecessary trailing newline (whitespace)
-        })
-        ^
-main.go:21:14: unnecessary leading newline (whitespace)
-func main() {
-             ^
-gaz358@gaz358-BOD-WXX9:~/myprog/test$ 
+
 
 
