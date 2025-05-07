@@ -148,6 +148,28 @@ func main() {
 	}
 }
 
+[{
+	"resource": "/home/gaz358/myprog/sobes/main.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "InvalidIfaceAssign",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "InvalidIfaceAssign"
+		}
+	},
+	"severity": 8,
+	"message": "cannot use \"No .env file found\" (constant of type string) as context.Context value in argument to logger.Error: string does not implement context.Context (missing method Deadline)",
+	"source": "compiler",
+	"startLineNumber": 28,
+	"startColumn": 16,
+	"endLineNumber": 28,
+	"endColumn": 36
+}]
+
 
 
 
