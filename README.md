@@ -85,27 +85,9 @@ swag init
 http://localhost:8080/swagger/index.html
 
 
-# PostgreSQL
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=qwert
-DB_NAME=people
-DB_SSLMODE=disable
-
-# Внешние API
-AGIFY_API=https://api.agify.io
-GENDERIZE_API=https://api.genderize.io
-NATIONALIZE_API=https://api.nationalize.io
-
-	port := os.Getenv("SERVER_PORT")
-	if port == "" {
-		port = "8080" // fallback
-	}
-
-	// Запуск сервера
-	log.Printf("Starting server on port %s...", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+golangci-lint --version
+golangci-lint run
 
 
 
