@@ -87,108 +87,63 @@ http://localhost:8080/swagger/index.html
 
 
 
-package services
-
-import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"os"
-	"time"
-)
-
-const requestTimeout = 5 * time.Second
-const unknown = "unknown"
-
+WARN The linter 'exportloopref' is deprecated (since v1.60.2) due to: Since Go1.22 (loopvar) this linter is no longer relevant. Replaced by copyloopvar. 
+ERRO [linters_context] exportloopref: This linter is fully inactivated: it will not produce any reports. 
+internal/services/services.go:15: 15-41 lines are duplicate of `internal/services/services.go:43-69` (dupl)
 func GetGender(name string) string {
-	var res struct {
-		Gender string `json:"gender"`
-	}
+        var res struct {
+                Gender string `json:"gender"`
+        }
 
-	apiURL := os.Getenv("GENDERIZE_API")
+        apiURL := os.Getenv("GENDERIZE_API")
 
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
+        ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+        defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
-	if err != nil {
-		return ""
-	}
+        req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
+        if err != nil {
+                return ""
+        }
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ""
-	}
-	defer resp.Body.Close()
+        resp, err := http.DefaultClient.Do(req)
+        if err != nil {
+                return ""
+        }
+        defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return ""
-	}
+        if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+                return ""
+        }
 
-	return res.Gender
+        return res.Gender
 }
-
+internal/services/services.go:43: 43-69 lines are duplicate of `internal/services/services.go:15-41` (dupl)
 func GetAge(name string) int {
-	var res struct {
-		Age int `json:"age"`
-	}
+        var res struct {
+                Age int `json:"age"`
+        }
 
-	apiURL := os.Getenv("AGIFY_API")
+        apiURL := os.Getenv("AGIFY_API")
 
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
+        ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+        defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
-	if err != nil {
-		return 0
-	}
+        req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
+        if err != nil {
+                return 0
+        }
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return 0
-	}
-	defer resp.Body.Close()
+        resp, err := http.DefaultClient.Do(req)
+        if err != nil {
+                return 0
+        }
+        defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return 0
-	}
+        if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+                return 0
+        }
 
-	return res.Age
-}
-
-func GetNationality(name string) string {
-	var res struct {
-		Country []struct {
-			CountryID string `json:"country_id"`
-		} `json:"country"`
-	}
-
-	apiURL := os.Getenv("NATIONALIZE_API")
-
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
-	if err != nil {
-		return unknown
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return unknown
-	}
-	defer resp.Body.Close()
-
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return unknown
-	}
-
-	if len(res.Country) > 0 {
-		return res.Country[0].CountryID
-	}
-
-	return unknown
+        return res.Age
 }
 
 
