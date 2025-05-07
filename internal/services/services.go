@@ -1,13 +1,16 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 )
 
-const unknown = "uncnown"
+const requestTimeout = 5 * time.Second
+const unknown = "unknown"
 
 func GetGender(name string) string {
 	var res struct {
@@ -15,13 +18,8 @@ func GetGender(name string) string {
 	}
 
 	apiURL := os.Getenv("GENDERIZE_API")
-	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+	err := fetchJSON(fmt.Sprintf("%s?name=%s", apiURL, name), &res)
 	if err != nil {
-		return ""
-	}
-	defer resp.Body.Close()
-
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return ""
 	}
 
@@ -34,13 +32,8 @@ func GetAge(name string) int {
 	}
 
 	apiURL := os.Getenv("AGIFY_API")
-	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+	err := fetchJSON(fmt.Sprintf("%s?name=%s", apiURL, name), &res)
 	if err != nil {
-		return 0
-	}
-	defer resp.Body.Close()
-
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return 0
 	}
 
@@ -55,7 +48,16 @@ func GetNationality(name string) string {
 	}
 
 	apiURL := os.Getenv("NATIONALIZE_API")
-	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
+	if err != nil {
+		return unknown
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return unknown
 	}
@@ -70,4 +72,22 @@ func GetNationality(name string) string {
 	}
 
 	return unknown
+}
+
+func fetchJSON[T any](url string, target *T) error {
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return json.NewDecoder(resp.Body).Decode(target)
 }
