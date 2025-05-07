@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 
 	"people/internal/models"
+	"people/internal/pkg"
 	"people/internal/services"
 )
 
@@ -31,7 +32,24 @@ func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 	var req models.CreatePersonRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Нормализация (первая буква заглавная, остальные строчные)
+	req.Name = pkg.NormalizeName(req.Name)
+	req.Surname = pkg.NormalizeName(req.Surname)
+	if req.Patronymic != "" {
+		req.Patronymic = pkg.NormalizeName(req.Patronymic)
+	}
+
+	// Валидация имени и фамилии (обязательные), отчество — опционально
+	if !pkg.IsValidName(req.Name) || !pkg.IsValidName(req.Surname) {
+		http.Error(w, "Name and surname must contain only letters and start with a capital letter", http.StatusBadRequest)
+		return
+	}
+	if req.Patronymic != "" && !pkg.IsValidName(req.Patronymic) {
+		http.Error(w, "Patronymic must contain only letters and start with a capital letter", http.StatusBadRequest)
 		return
 	}
 
@@ -42,6 +60,7 @@ func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 
 	nationality := services.GetNationality(req.Name)
 
+	// Создание и сохранение записи
 	p := models.Person{
 		Name:        req.Name,
 		Surname:     req.Surname,
@@ -52,10 +71,11 @@ func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.DB.Create(&p).Error; err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to save person: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// Ответ
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(p)
 }
