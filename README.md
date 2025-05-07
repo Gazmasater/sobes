@@ -98,6 +98,12 @@ AGIFY_API=https://api.agify.io
 GENDERIZE_API=https://api.genderize.io
 NATIONALIZE_API=https://api.nationalize.io
 
+SERVER_PORT=8080
+port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080" // fallback
+	}
+
 
 func Init() *gorm.DB {
 	// Загрузка .env (если ещё не загружено)
