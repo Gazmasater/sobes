@@ -40,9 +40,25 @@ paths:
     get:
       consumes:
       - application/json
-      description: Возвращает список людей с возможностью фильтрации по полу и национальности,
-        а также с пагинацией
+      description: Возвращает список людей с возможностью фильтрации, сортировки и
+        пагинации
       parameters:
+      - description: Имя (например, Ivan)
+        in: query
+        name: name
+        type: string
+      - description: Фамилия (например, Petrov)
+        in: query
+        name: surname
+        type: string
+      - description: Отчество (например, Ivanovich)
+        in: query
+        name: patronymic
+        type: string
+      - description: Возраст (например, 30)
+        in: query
+        name: age
+        type: integer
       - description: Пол (например, male, female)
         in: query
         name: gender
@@ -50,6 +66,14 @@ paths:
       - description: Национальность (например, Russian, American)
         in: query
         name: nationality
+        type: string
+      - description: Поле сортировки (например, name, age, surname)
+        in: query
+        name: sort_by
+        type: string
+      - description: Порядок сортировки (asc или desc)
+        in: query
+        name: order
         type: string
       - description: Количество возвращаемых записей (по умолчанию 10)
         in: query

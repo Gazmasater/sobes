@@ -18,7 +18,7 @@ func SetupRoutes(h handlers.Handler) *chi.Mux {
 		r.Post("/", h.CreatePerson)
 		r.Get("/", h.GetPeople)
 		r.Put("/{id}", h.UpdatePerson)
-		r.Delete("/{id}", h.DeletePerson) // Используем прямую передачу параметра в обработчик
+		r.Delete("/{id}", h.DeletePerson)
 	})
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)

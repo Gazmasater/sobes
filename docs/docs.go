@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/people": {
             "get": {
-                "description": "Возвращает список людей с возможностью фильтрации по полу и национальности, а также с пагинацией",
+                "description": "Возвращает список людей с возможностью фильтрации, сортировки и пагинации",
                 "consumes": [
                     "application/json"
                 ],
@@ -31,6 +31,30 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Имя (например, Ivan)",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Фамилия (например, Petrov)",
+                        "name": "surname",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Отчество (например, Ivanovich)",
+                        "name": "patronymic",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Возраст (например, 30)",
+                        "name": "age",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Пол (например, male, female)",
                         "name": "gender",
                         "in": "query"
@@ -39,6 +63,18 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Национальность (например, Russian, American)",
                         "name": "nationality",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Поле сортировки (например, name, age, surname)",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Порядок сортировки (asc или desc)",
+                        "name": "order",
                         "in": "query"
                     },
                     {
