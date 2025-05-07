@@ -96,6 +96,17 @@ internal/handlers/handlers.go:123:27: Error return value of `(*encoding/json.Enc
                                  ^
 internal/handlers/handlers.go:180:27: Error return value of `(*encoding/json.Encoder).Encode` is not checked (errcheck)
         json.NewEncoder(w).Encode(existing)
+                                 ^
+internal/services/services.go:18:23: net/http.Get must not be called (noctx)
+        resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+                             ^
+internal/services/services.go:37:23: net/http.Get must not be called (noctx)
+        resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+                             ^
+internal/services/services.go:58:23: net/http.Get must not be called (noctx)
+        resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+                             ^
+gaz358@gaz358-BOD-WXX9:~/myprog/test$ ^C
 
 
  package handlers
