@@ -85,66 +85,91 @@ swag init
 http://localhost:8080/swagger/index.html
 
 
-func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	log.Printf("id=%s", id)
+
+	var existing models.Person
+
+	// Найти по ID
+	if err := h.DB.First(&existing, id).Error; err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
 	var req models.CreatePersonRequest
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Warn(ctx, "Invalid JSON body", "err", err)
-		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-	logger.Debug(ctx, "Parsed request", "request", req)
-
-	// Нормализация
-	req.Name = pkg.NormalizeName(req.Name)
-	req.Surname = pkg.NormalizeName(req.Surname)
-	if req.Patronymic != "" {
-		req.Patronymic = pkg.NormalizeName(req.Patronymic)
-	}
-	logger.Debug(ctx, "Normalized fields", "name", req.Name, "surname", req.Surname, "patronymic", req.Patronymic)
-
-	// Валидация
-	if !pkg.IsValidName(req.Name) || !pkg.IsValidName(req.Surname) {
-		logger.Warn(ctx, "Validation failed for name/surname", "name", req.Name, "surname", req.Surname)
-		http.Error(w, "Name and surname must contain only letters and start with a capital letter", http.StatusBadRequest)
-		return
-	}
-	if req.Patronymic != "" && !pkg.IsValidName(req.Patronymic) {
-		logger.Warn(ctx, "Validation failed for patronymic", "patronymic", req.Patronymic)
-		http.Error(w, "Patronymic must contain only letters and start with a capital letter", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Внешние API
-	age := services.GetAge(req.Name)
-	gender := services.GetGender(req.Name)
-	nationality := services.GetNationality(req.Name)
+	// Обновление основных полей
+	existing.Name = req.Name
+	existing.Surname = req.Surname
+	existing.Patronymic = req.Patronymic
 
-	logger.Debug(ctx, "External data fetched", "age", age, "gender", gender, "nationality", nationality)
+	// Если имя изменилось — запрашиваем новые значения
+	if req.Name != existing.Name {
+		age := services.GetAge(req.Name)
 
-	p := models.Person{
-		Name:        req.Name,
-		Surname:     req.Surname,
-		Patronymic:  req.Patronymic,
-		Age:         age,
-		Gender:      gender,
-		Nationality: nationality,
+		gender := services.GetGender(req.Name)
+
+		nationality := services.GetNationality(req.Name)
+
+		existing.Age = age
+		existing.Gender = gender
+		existing.Nationality = nationality
 	}
 
-	if err := h.DB.Create(&p).Error; err != nil {
-		logger.Error(ctx, "Failed to save person", "err", err)
-		http.Error(w, "Failed to save person: "+err.Error(), http.StatusInternalServerError)
+	// Сохраняем
+	if err := h.DB.Save(&existing).Error; err != nil {
+		http.Error(w, "Failed to update person", http.StatusInternalServerError)
 		return
 	}
 
-	logger.Info(ctx, "Person created", "id", p.ID)
-
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(p); err != nil {
-		logger.Error(ctx, "Failed to encode response", "err", err)
+	if err := json.NewEncoder(w).Encode(existing); err != nil {
+		log.Printf("failed to encode response: %v", err)
 		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 		return
 	}
 }
+
+func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	// Извлекаем ID параметр из URL
+	idStr := chi.URLParam(r, "id")
+	log.Printf("Received ID: %s", idStr)
+
+	if idStr == "" {
+		log.Printf("No ID provided in the URL!")
+		http.Error(w, `{"error":"missing ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Преобразуем ID в число
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		log.Printf("Error converting ID: %v", err)
+		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	var p models.Person
+	// Ищем человека по ID
+	if err := h.DB.First(&p, id).Error; err != nil {
+		log.Printf("Person not found with ID %d", id)
+		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// Удаляем человека
+	if err := h.DB.Delete(&p).Error; err != nil {
+		log.Printf("Error deleting person with ID %d", id)
+		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Возвращаем статус 204 (No Content)
+	w.WriteHeader(http.StatusNoContent)
+}
+
 
