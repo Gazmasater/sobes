@@ -85,42 +85,78 @@ swag init
 http://localhost:8080/swagger/index.html
 
 
-package services
+func GetGender(name string) string {
+	var res struct {
+		Gender string `json:"gender"`
+	}
 
-import (
-    "context"
-    "fmt"
-    "net/http"
-    "time"
-)
+	apiURL := os.Getenv("GENDERIZE_API")
+	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
 
-func GetAge(name string) string {
-    apiURL := "http://example.com/age" // пример URL
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return ""
+	}
 
-    // Создаем контекст с тайм-аутом
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-    defer cancel()
-
-    // Создаем запрос с контекстом
-    req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
-    if err != nil {
-        // обработка ошибки
-        return "unknown"
-    }
-
-    // Выполняем запрос
-    resp, err := http.DefaultClient.Do(req)
-    if err != nil {
-        // обработка ошибки
-        return "unknown"
-    }
-    defer resp.Body.Close()
-
-    // Обработка ответа
-    if resp.StatusCode == http.StatusOK {
-        return "some value" // пример обработки ответа
-    }
-
-    return "unknown"
+	return res.Gender
 }
 
+func GetAge(name string) int {
+	var res struct {
+		Age int `json:"age"`
+	}
+
+	apiURL := os.Getenv("AGIFY_API")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
+	if err != nil {
+		// обработка ошибки
+		return 0
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return 0
+	}
+
+	return res.Age
+}
+
+func GetNationality(name string) string {
+	var res struct {
+		Country []struct {
+			CountryID string `json:"country_id"`
+		} `json:"country"`
+	}
+
+	apiURL := os.Getenv("NATIONALIZE_API")
+	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+	if err != nil {
+		return unknown
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return unknown
+	}
+
+	if len(res.Country) > 0 {
+		return res.Country[0].CountryID
+	}
+
+	return unknown
+}
+
+internal/services/services.go:40:59: Magic number: 5, in <argument> detected (mnd)
+        ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+                                                                 ^
+internal/services/services.go:20:23: net/http.Get must not be called (noctx)
+        resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+                             ^
+internal/services/services.go:64:23: net/http.Get must not be called (noctx)
+        resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
