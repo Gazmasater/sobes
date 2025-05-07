@@ -84,94 +84,61 @@ swag init
 
 http://localhost:8080/swagger/index.html
 
-func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
-	var req models.CreatePersonRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
-		return
+# .env
+AGIFY_API=https://api.agify.io
+GENDERIZE_API=https://api.genderize.io
+NATIONALIZE_API=https://api.nationalize.io
+
+
+package main
+
+import (
+	"log"
+	"os"
+
+	"github.com/joho/godotenv"
+)
+
+func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
 	}
 
-	// Нормализация (первая буква заглавная, остальные строчные)
-	req.Name = normalizeName(req.Name)
-	req.Surname = normalizeName(req.Surname)
-	if req.Patronymic != "" {
-		req.Patronymic = normalizeName(req.Patronymic)
-	}
+	// пример использования
+	log.Println("AGIFY_API =", os.Getenv("AGIFY_API"))
 
-	// Валидация имени и фамилии (обязательные), отчество — опционально
-	if !isValidName(req.Name) || !isValidName(req.Surname) {
-		http.Error(w, "Name and surname must contain only letters and start with a capital letter", http.StatusBadRequest)
-		return
-	}
-	if req.Patronymic != "" && !isValidName(req.Patronymic) {
-		http.Error(w, "Patronymic must contain only letters and start with a capital letter", http.StatusBadRequest)
-		return
-	}
-
-	// Получение данных из внешних API
-	age, err := services.GetAge(req.Name)
-	if err != nil {
-		http.Error(w, "Failed to fetch age: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	gender, err := services.GetGender(req.Name)
-	if err != nil {
-		http.Error(w, "Failed to fetch gender: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	nationality, err := services.GetNationality(req.Name)
-	if err != nil {
-		http.Error(w, "Failed to fetch nationality: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Создание и сохранение записи
-	p := models.Person{
-		Name:        req.Name,
-		Surname:     req.Surname,
-		Patronymic:  req.Patronymic,
-		Age:         age,
-		Gender:      gender,
-		Nationality: nationality,
-	}
-
-	if err := h.DB.Create(&p).Error; err != nil {
-		http.Error(w, "Failed to save person: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Ответ
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(p)
+	// запуск сервера и т.д.
 }
 
 
+package services
 
-func normalizeName(s string) string {
-	s = strings.TrimSpace(s)
-	if len(s) == 0 {
-		return s
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+)
+
+func GetAge(name string) (int, error) {
+	url := fmt.Sprintf("%s?name=%s", os.Getenv("AGIFY_API"), name)
+	resp, err := http.Get(url)
+	if err != nil {
+		return 0, err
 	}
-	return strings.ToUpper(string(s[0])) + strings.ToLower(s[1:])
+	defer resp.Body.Close()
+
+	var result struct {
+		Age int `json:"age"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return 0, err
+	}
+	return result.Age, nil
 }
 
-func isValidName(name string) bool {
-	match, _ := regexp.MatchString(`^[\p{L}]+$`, name) // Только буквы (любой алфавит)
-	if !match {
-		return false
-	}
-	runes := []rune(name)
-	return unicode.IsUpper(runes[0])
-}
-
-
-
-
-
-
+// аналогично GetGender и GetNationality
 
 
 
