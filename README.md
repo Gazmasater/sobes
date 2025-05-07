@@ -87,13 +87,36 @@ http://localhost:8080/swagger/index.html
 
 
 
+package services
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+	"time"
+)
+
+const requestTimeout = 5 * time.Second
+const unknown = "unknown"
+
 func GetGender(name string) string {
 	var res struct {
 		Gender string `json:"gender"`
 	}
 
 	apiURL := os.Getenv("GENDERIZE_API")
-	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
+	if err != nil {
+		return ""
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return ""
 	}
@@ -112,7 +135,16 @@ func GetAge(name string) int {
 	}
 
 	apiURL := os.Getenv("AGIFY_API")
-	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
+	if err != nil {
+		return 0
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return 0
 	}
@@ -133,7 +165,16 @@ func GetNationality(name string) string {
 	}
 
 	apiURL := os.Getenv("NATIONALIZE_API")
-	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
+	if err != nil {
+		return unknown
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return unknown
 	}
@@ -149,5 +190,6 @@ func GetNationality(name string) string {
 
 	return unknown
 }
+
 
 
