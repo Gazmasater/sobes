@@ -85,32 +85,58 @@ swag init
 http://localhost:8080/swagger/index.html
 
 
-func main() {
-	// Инициализация логгера
-	logger.SetLogger(logger.New(zapcore.DebugLevel))
+func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
+	var req models.CreatePersonRequest
 
-	// Создаём context
-	ctx := logger.ToContext(context.Background(), logger.Global())
-
-	if err := godotenv.Load(); err != nil {
-		logger.Error(ctx, "No .env file found")
-	} else {
-		logger.Debug(ctx, "Successfully loaded .env file")
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	port := os.Getenv("SERVER_PORT")
-	if port == "" {
-		port = "8080"
+	// Нормализация (первая буква заглавная, остальные строчные)
+	req.Name = pkg.NormalizeName(req.Name)
+	req.Surname = pkg.NormalizeName(req.Surname)
+	if req.Patronymic != "" {
+		req.Patronymic = pkg.NormalizeName(req.Patronymic)
 	}
-	logger.Debugf(ctx, "Using port: %s", port)
 
-	database := db.Init()
-	h := handlers.Handler{DB: database}
-	r := router.SetupRoutes(h)
+	// Валидация имени и фамилии (обязательные), отчество — опционально
+	if !pkg.IsValidName(req.Name) || !pkg.IsValidName(req.Surname) {
+		http.Error(w, "Name and surname must contain only letters and start with a capital letter", http.StatusBadRequest)
+		return
+	}
+	if req.Patronymic != "" && !pkg.IsValidName(req.Patronymic) {
+		http.Error(w, "Patronymic must contain only letters and start with a capital letter", http.StatusBadRequest)
+		return
+	}
 
-	logger.Infof(ctx, "Starting server on port: %s", port)
+	// Получение данных из внешних API
+	age := services.GetAge(req.Name)
 
-	if err := http.ListenAndServe(":"+port, r); err != nil {
-		logger.Fatalf(ctx, "Server failed: %v", err)
+	gender := services.GetGender(req.Name)
+
+	nationality := services.GetNationality(req.Name)
+
+	// Создание и сохранение записи
+	p := models.Person{
+		Name:        req.Name,
+		Surname:     req.Surname,
+		Patronymic:  req.Patronymic,
+		Age:         age,
+		Gender:      gender,
+		Nationality: nationality,
+	}
+
+	if err := h.DB.Create(&p).Error; err != nil {
+		http.Error(w, "Failed to save person: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Ответ
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(p); err != nil {
+		log.Printf("failed to encode response: %v", err)
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+		return
 	}
 }
