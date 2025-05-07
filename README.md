@@ -89,3 +89,12 @@ http://localhost:8080/swagger/index.html
 
 internal/handlers/handlers.go:80:27: Error return value of `(*encoding/json.Encoder).Encode` is not checked (errcheck)
         json.NewEncoder(w).Encode(p)
+
+
+
+ if err := json.NewEncoder(w).Encode(p); err != nil {
+	log.Printf("failed to encode response: %v", err)
+	http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+	return
+}
+
