@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	_ "people/docs"
 
 	"people/internal/db"
@@ -23,30 +24,17 @@ func main() {
 		log.Println("No .env file found")
 	}
 
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080" // fallback
+	}
+
 	database := db.Init()
 	h := handlers.Handler{DB: database}
 
 	r := router.SetupRoutes(h)
 
-	log.Println("API running at :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	// Запуск сервера
+	log.Printf("Starting server on port %s...", port)
+	log.Fatal(http.ListenAndServe(":"+port, r))
 }
-
-// func setupRoutes(H handlers.Handler) *chi.Mux {
-// 	r := chi.NewRouter()
-
-// 	r.Use(middleware.Logger)
-// 	r.Use(middleware.Recoverer)
-
-// 	r.Route("/people", func(r chi.Router) {
-// 		r.Post("/", H.CreatePerson)
-// 		r.Get("/", H.GetPeople)
-// 		r.Put("/{id}", H.UpdatePerson)
-// 		r.Delete("/{id}", H.DeletePerson)
-
-// 	})
-
-// 	r.Get("/swagger/*", httpSwagger.WrapHandler)
-
-// 	return r
-// }
