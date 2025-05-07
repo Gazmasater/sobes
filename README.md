@@ -94,3 +94,19 @@ func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
 }
 
 
+// GetPeople godoc
+// @Summary Получить список людей
+// @Description Возвращает список людей с возможностью фильтрации по полу и национальности, а также с пагинацией
+// @Tags people
+// @Accept json
+// @Produce json
+// @Param gender query string false "Пол (например, male, female)"
+// @Param nationality query string false "Национальность (например, Russian, American)"
+// @Param limit query int false "Количество возвращаемых записей (по умолчанию 10)"
+// @Param offset query int false "Смещение (offset) для пагинации"
+// @Success 200 {array} models.Person
+// @Failure 500 {object} map[string]string
+// @Router /people [get]
+
+
+
