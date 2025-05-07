@@ -88,38 +88,69 @@ http://localhost:8080/swagger/index.html
 package main
 
 import (
-    "log"
-    "net/http"
-    "os"
-    "strconv"
-    "time"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+
+	_ "people/docs"
+
+	"people/internal/db"
+	"people/internal/handlers"
+	"people/internal/router"
+
+	"github.com/joho/godotenv"
 )
 
+// @title           People API
+// @version         1.0
+// @description     API for managing people.
+// @host            localhost:8080
+// @BasePath        /
 func main() {
-    port := os.Getenv("PORT")
-    if port == "" {
-        port = "8080" // fallback
-    }
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
 
-    readTimeoutSec, err := strconv.Atoi(os.Getenv("READ_TIMEOUT"))
-    if err != nil {
-        readTimeoutSec = 10
-    }
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080"
+	}
 
-    writeTimeoutSec, err := strconv.Atoi(os.Getenv("WRITE_TIMEOUT"))
-    if err != nil {
-        writeTimeoutSec = 10
-    }
+	// ReadTimeout
+	readTimeoutSec := 10 // default
+	if readTimeoutStr := os.Getenv("READ_TIMEOUT"); readTimeoutStr != "" {
+		if v, err := strconv.Atoi(readTimeoutStr); err == nil {
+			readTimeoutSec = v
+		} else {
+			log.Printf("Invalid READ_TIMEOUT: %v", err)
+		}
+	}
 
-    srv := &http.Server{
-        Addr:         ":" + port,
-        Handler:      yourRouter(), // замени на свой роутер
-        ReadTimeout:  time.Duration(readTimeoutSec) * time.Second,
-        WriteTimeout: time.Duration(writeTimeoutSec) * time.Second,
-    }
+	// WriteTimeout
+	writeTimeoutSec := 10 // default
+	if writeTimeoutStr := os.Getenv("WRITE_TIMEOUT"); writeTimeoutStr != "" {
+		if v, err := strconv.Atoi(writeTimeoutStr); err == nil {
+			writeTimeoutSec = v
+		} else {
+			log.Printf("Invalid WRITE_TIMEOUT: %v", err)
+		}
+	}
 
-    log.Printf("Starting server on port %s...", port)
-    log.Fatal(srv.ListenAndServe())
+	database := db.Init()
+	h := handlers.Handler{DB: database}
+	r := router.SetupRoutes(h)
+
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      r,
+		ReadTimeout:  time.Duration(readTimeoutSec) * time.Second,
+		WriteTimeout: time.Duration(writeTimeoutSec) * time.Second,
+	}
+
+	log.Printf("Starting server on port %s...", port)
+	log.Fatal(srv.ListenAndServe())
 }
 
 
