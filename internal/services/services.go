@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+const unknown = "uncnown"
+
 func GetGender(name string) string {
 	var res struct {
 		Gender string `json:"gender"`
@@ -55,17 +57,17 @@ func GetNationality(name string) string {
 	apiURL := os.Getenv("NATIONALIZE_API")
 	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
 	if err != nil {
-		return "unknown"
+		return unknown
 	}
 	defer resp.Body.Close()
 
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return "unknown"
+		return unknown
 	}
 
 	if len(res.Country) > 0 {
 		return res.Country[0].CountryID
 	}
 
-	return "unknown"
+	return unknown
 }
