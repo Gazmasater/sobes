@@ -85,15 +85,43 @@ swag init
 http://localhost:8080/swagger/index.html
 
 
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-golangci-lint --version
-golangci-lint runsrv := &http.Server{
-    Addr:         ":" + port,
-    Handler:      r,
-    ReadTimeout:  10 * time.Second,
-    WriteTimeout: 10 * time.Second,
+package main
+
+import (
+    "log"
+    "net/http"
+    "os"
+    "strconv"
+    "time"
+)
+
+func main() {
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "8080" // fallback
+    }
+
+    readTimeoutSec, err := strconv.Atoi(os.Getenv("READ_TIMEOUT"))
+    if err != nil {
+        readTimeoutSec = 10
+    }
+
+    writeTimeoutSec, err := strconv.Atoi(os.Getenv("WRITE_TIMEOUT"))
+    if err != nil {
+        writeTimeoutSec = 10
+    }
+
+    srv := &http.Server{
+        Addr:         ":" + port,
+        Handler:      yourRouter(), // замени на свой роутер
+        ReadTimeout:  time.Duration(readTimeoutSec) * time.Second,
+        WriteTimeout: time.Duration(writeTimeoutSec) * time.Second,
+    }
+
+    log.Printf("Starting server on port %s...", port)
+    log.Fatal(srv.ListenAndServe())
 }
-log.Fatal(srv.ListenAndServe())
+
 
 
 
