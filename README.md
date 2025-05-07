@@ -202,29 +202,56 @@ go clean -cache -modcache -testcache
 func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	log.Printf("id=%s", id)
-	var p models.Person
 
-	// Поиск существующей записи
-	if err := h.DB.First(&p, id).Error; err != nil {
+	var existing models.Person
+
+	// Найти по ID
+	if err := h.DB.First(&existing, id).Error; err != nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	var updated models.Person
-
-	// Декодирование новых данных из тела запроса
-	if err := json.NewDecoder(r.Body).Decode(&updated); err != nil {
+	var req models.CreatePersonRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Обновление полей модели
-	h.DB.Model(&p).Updates(updated)
+	// Обновление основных полей
+	existing.Name = req.Name
+	existing.Surname = req.Surname
+	existing.Patronymic = req.Patronymic
 
-	// Ответ с обновлёнными данными
-	json.NewEncoder(w).Encode(p)
+	// Если имя изменилось — запрашиваем новые значения
+	if req.Name != existing.Name {
+		age, err := services.GetAge(req.Name)
+		if err != nil {
+			http.Error(w, "Failed to get age", http.StatusInternalServerError)
+			return
+		}
+		gender, err := services.GetGender(req.Name)
+		if err != nil {
+			http.Error(w, "Failed to get gender", http.StatusInternalServerError)
+			return
+		}
+		nationality, err := services.GetNationality(req.Name)
+		if err != nil {
+			http.Error(w, "Failed to get nationality", http.StatusInternalServerError)
+			return
+		}
+		existing.Age = age
+		existing.Gender = gender
+		existing.Nationality = nationality
+	}
+
+	// Сохраняем
+	if err := h.DB.Save(&existing).Error; err != nil {
+		http.Error(w, "Failed to update person", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(existing)
 }
-
 
 
 
