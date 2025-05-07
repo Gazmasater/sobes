@@ -141,14 +141,14 @@ paths:
         name: person
         required: true
         schema:
-          $ref: '#/definitions/models.Person'
+          $ref: '#/definitions/models.CreatePersonRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Person'
+            $ref: '#/definitions/models.CreatePersonRequest'
         "400":
           description: Bad Request
           schema:

@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi"
 	"gorm.io/gorm"
 
 	"people/internal/models"
@@ -29,29 +30,32 @@ type Handler struct {
 func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 	var req models.CreatePersonRequest
 
-	// Декодирование запроса
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Создание полной структуры Person с автозаполнением
+	// Получение данных из внешних API
+	age := services.GetAge(req.Name)
+
+	gender := services.GetGender(req.Name)
+
+	nationality := services.GetNationality(req.Name)
+
 	p := models.Person{
 		Name:        req.Name,
 		Surname:     req.Surname,
 		Patronymic:  req.Patronymic,
-		Gender:      services.GetGender(req.Name),
-		Age:         services.GetAge(req.Name),
-		Nationality: services.GetNationality(req.Name),
+		Age:         age,
+		Gender:      gender,
+		Nationality: nationality,
 	}
 
-	// Сохранение в базу данных
 	if err := h.DB.Create(&p).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Ответ
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(p)
 }
@@ -106,34 +110,54 @@ func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param id path int true "ID человека"
-// @Param person body models.Person true "Обновлённые данные"
-// @Success 200 {object} models.Person
+// @Param person body models.CreatePersonRequest true "Обновлённые данные"
+// @Success 200 {object} models.CreatePersonRequest
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /people/{id} [put]
 func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
-	var p models.Person
+	id := chi.URLParam(r, "id")
+	log.Printf("id=%s", id)
 
-	// Поиск существующей записи
-	if err := h.DB.First(&p, id).Error; err != nil {
+	var existing models.Person
+
+	// Найти по ID
+	if err := h.DB.First(&existing, id).Error; err != nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	var updated models.Person
-
-	// Декодирование новых данных из тела запроса
-	if err := json.NewDecoder(r.Body).Decode(&updated); err != nil {
+	var req models.CreatePersonRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Обновление полей модели
-	h.DB.Model(&p).Updates(updated)
+	// Обновление основных полей
+	existing.Name = req.Name
+	existing.Surname = req.Surname
+	existing.Patronymic = req.Patronymic
 
-	// Ответ с обновлёнными данными
-	json.NewEncoder(w).Encode(p)
+	// Если имя изменилось — запрашиваем новые значения
+	if req.Name != existing.Name {
+		age := services.GetAge(req.Name)
+
+		gender := services.GetGender(req.Name)
+
+		nationality := services.GetNationality(req.Name)
+
+		existing.Age = age
+		existing.Gender = gender
+		existing.Nationality = nationality
+	}
+
+	// Сохраняем
+	if err := h.DB.Save(&existing).Error; err != nil {
+		http.Error(w, "Failed to update person", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(existing)
 }
 
 // DeletePerson godoc
@@ -145,24 +169,39 @@ func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} map[string]string
 // @Router /people/{id} [delete]
 func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	idStr := mux.Vars(r)["id"]
-	idUint, err := strconv.ParseUint(idStr, 10, 32)
+	// Извлекаем ID параметр из URL
+	idStr := chi.URLParam(r, "id")
+	log.Printf("Received ID: %s", idStr)
+
+	if idStr == "" {
+		log.Printf("No ID provided in the URL!")
+		http.Error(w, `{"error":"missing ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Преобразуем ID в число
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
+		log.Printf("Error converting ID: %v", err)
 		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
 		return
 	}
-	id := uint(idUint)
 
 	var p models.Person
+	// Ищем человека по ID
 	if err := h.DB.First(&p, id).Error; err != nil {
+		log.Printf("Person not found with ID %d", id)
 		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
 		return
 	}
 
+	// Удаляем человека
 	if err := h.DB.Delete(&p).Error; err != nil {
+		log.Printf("Error deleting person with ID %d", id)
 		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
 		return
 	}
 
+	// Возвращаем статус 204 (No Content)
 	w.WriteHeader(http.StatusNoContent)
 }
