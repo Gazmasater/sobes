@@ -84,174 +84,70 @@ swag init
 
 http://localhost:8080/swagger/index.html
 
-func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
-	var people []models.Person
-	query := h.DB
-
-	// Фильтрация по полу
-	gender := r.URL.Query().Get("gender")
-	if gender != "" {
-		query = query.Where("gender = ?", gender)
-	}
-
-	// Фильтрация по национальности
-	nationality := r.URL.Query().Get("nationality")
-	if nationality != "" {
-		query = query.Where("nationality = ?", nationality)
-	}
-
-	// Получение limit и offset из query-параметров
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-	if limit == 0 {
-		limit = 10 // Значение по умолчанию
-	}
-
-	// Выполнение запроса к базе данных
-	query.Limit(limit).Offset(offset).Find(&people)
-
-	// Ответ в формате JSON
-	json.NewEncoder(w).Encode(people)
-}
-
-
-
-
-
-
-
-
-package main
-
-import (
-	"log"
-	"net/http"
-	"people/internal/db"
-	"people/internal/handlers"
-	"people/internal/router"
-)
-
-func main() {
-	database := db.Init()
-	h := handlers.Handler{DB: database}
-
-	r := router.SetupRoutes(h)
-
-	log.Println("API running at :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
-}
-
-
-package router
-
-import (
-	"people/internal/handlers"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-)
-
-func SetupRoutes(h handlers.Handler) *chi.Mux {
-	r := chi.NewRouter()
-
-	// Middleware
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	// Routes
-	r.Route("/people", func(r chi.Router) {
-		r.Post("/", h.CreatePerson)
-		r.Get("/", h.GetPeople)
-		r.Put("/{id}", h.UpdatePerson)
-		r.Delete("/{id}", h.DeletePerson)
-	})
-
-	return r
-}
-
-
-
-✅ 1. Импортировать сгенерированные docs
-В файле cmd/server/main.go (или где у тебя точка входа), добавь:
-
-
-import _ "people/docs" // Путь к пакету с docs, без этого Swagger не заработает
-Если у тебя проект в ~/myprog/test, а go.mod начинается с module people, то путь будет корректен.
-
-✅ 2. Добавить маршруты Swagger в Chi
-В router/router.go добавь в самый конец:
-
-
-import (
-	httpSwagger "github.com/swaggo/http-swagger"
-)
-
-// ...
-
-r.Get("/swagger/*", httpSwagger.WrapHandler)
-✅ 3. Пересобери и запусти
-
-go run ./cmd/server
-🌐 Swagger доступен по адресу:
-http://localhost:8080/swagger/index.html
-
-
-go clean -cache -modcache -testcache
-
-
-func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	log.Printf("id=%s", id)
-
-	var existing models.Person
-
-	// Найти по ID
-	if err := h.DB.First(&existing, id).Error; err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
+func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 	var req models.CreatePersonRequest
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Обновление основных полей
-	existing.Name = req.Name
-	existing.Surname = req.Surname
-	existing.Patronymic = req.Patronymic
-
-	// Если имя изменилось — запрашиваем новые значения
-	if req.Name != existing.Name {
-		age, err := services.GetAge(req.Name)
-		if err != nil {
-			http.Error(w, "Failed to get age", http.StatusInternalServerError)
-			return
-		}
-		gender, err := services.GetGender(req.Name)
-		if err != nil {
-			http.Error(w, "Failed to get gender", http.StatusInternalServerError)
-			return
-		}
-		nationality, err := services.GetNationality(req.Name)
-		if err != nil {
-			http.Error(w, "Failed to get nationality", http.StatusInternalServerError)
-			return
-		}
-		existing.Age = age
-		existing.Gender = gender
-		existing.Nationality = nationality
+	// Нормализация (первая буква заглавная, остальные строчные)
+	req.Name = normalizeName(req.Name)
+	req.Surname = normalizeName(req.Surname)
+	if req.Patronymic != "" {
+		req.Patronymic = normalizeName(req.Patronymic)
 	}
 
-	// Сохраняем
-	if err := h.DB.Save(&existing).Error; err != nil {
-		http.Error(w, "Failed to update person", http.StatusInternalServerError)
+	// Валидация имени и фамилии (обязательные), отчество — опционально
+	if !isValidName(req.Name) || !isValidName(req.Surname) {
+		http.Error(w, "Name and surname must contain only letters and start with a capital letter", http.StatusBadRequest)
+		return
+	}
+	if req.Patronymic != "" && !isValidName(req.Patronymic) {
+		http.Error(w, "Patronymic must contain only letters and start with a capital letter", http.StatusBadRequest)
 		return
 	}
 
-	json.NewEncoder(w).Encode(existing)
+	// Получение данных из внешних API
+	age, err := services.GetAge(req.Name)
+	if err != nil {
+		http.Error(w, "Failed to fetch age: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	gender, err := services.GetGender(req.Name)
+	if err != nil {
+		http.Error(w, "Failed to fetch gender: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	nationality, err := services.GetNationality(req.Name)
+	if err != nil {
+		http.Error(w, "Failed to fetch nationality: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Создание и сохранение записи
+	p := models.Person{
+		Name:        req.Name,
+		Surname:     req.Surname,
+		Patronymic:  req.Patronymic,
+		Age:         age,
+		Gender:      gender,
+		Nationality: nationality,
+	}
+
+	if err := h.DB.Create(&p).Error; err != nil {
+		http.Error(w, "Failed to save person: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Ответ
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(p)
 }
+
 
 
 
