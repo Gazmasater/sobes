@@ -26,36 +26,71 @@ swag init
 Создастся папка docs с документацией.
 
 func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	var people []models.Person
 	query := h.DB
 
-	// Фильтрация по полу
-	gender := r.URL.Query().Get("gender")
-	if gender != "" {
+	// Фильтрация
+	params := r.URL.Query()
+
+	if gender := params.Get("gender"); gender != "" {
 		query = query.Where("gender = ?", gender)
 	}
-
-	// Фильтрация по национальности
-	nationality := r.URL.Query().Get("nationality")
-	if nationality != "" {
+	if nationality := params.Get("nationality"); nationality != "" {
 		query = query.Where("nationality = ?", nationality)
 	}
-
-	// Получение limit и offset из query-параметров
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
-	if limit == 0 {
-		limit = 10 // Значение по умолчанию
+	if name := params.Get("name"); name != "" {
+		query = query.Where("name ILIKE ?", "%"+name+"%")
+	}
+	if surname := params.Get("surname"); surname != "" {
+		query = query.Where("surname ILIKE ?", "%"+surname+"%")
+	}
+	if patronymic := params.Get("patronymic"); patronymic != "" {
+		query = query.Where("patronymic ILIKE ?", "%"+patronymic+"%")
+	}
+	if age := params.Get("age"); age != "" {
+		if ageInt, err := strconv.Atoi(age); err == nil {
+			query = query.Where("age = ?", ageInt)
+		}
 	}
 
-	// Выполнение запроса к базе данных
-	query.Limit(limit).Offset(offset).Find(&people)
+	// Сортировка
+	sortBy := params.Get("sort_by")
+	order := params.Get("order")
+	if sortBy != "" {
+		if order != "desc" {
+			order = "asc"
+		}
+		// Защита от SQL-инъекций: разрешён только whitelisted список полей
+		allowedSorts := map[string]bool{
+			"id": true, "name": true, "surname": true,
+			"patronymic": true, "age": true, "gender": true, "nationality": true,
+		}
+		if allowedSorts[sortBy] {
+			query = query.Order(sortBy + " " + order)
+		}
+	}
 
-	// Ответ в формате JSON
-	if err := json.NewEncoder(w).Encode(people); err != nil {
-		log.Printf("failed to encode response: %v", err)
+	// Пагинация
+	limit, _ := strconv.Atoi(params.Get("limit"))
+	offset, _ := strconv.Atoi(params.Get("offset"))
+	if limit == 0 {
+		limit = 10
+	}
+	query = query.Limit(limit).Offset(offset)
+
+	// Получение из базы
+	if err := query.Find(&people).Error; err != nil {
+		logger.Error(ctx, "DB query failed", "error", err)
 		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 		return
 	}
+
+	if err := json.NewEncoder(w).Encode(people); err != nil {
+		logger.Error(ctx, "Failed to encode response", "error", err)
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+	}
 }
+
 
