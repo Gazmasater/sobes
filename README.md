@@ -87,25 +87,67 @@ http://localhost:8080/swagger/index.html
 
 
 
+package main
+
+import (
+	"context"
+	"net/http"
+	"os"
+
+	"people/docs"
+	"people/internal/db"
+	"people/internal/handlers"
+	"people/internal/logger"
+	"people/internal/router"
+
+	"github.com/joho/godotenv"
+	"go.uber.org/zap/zapcore"
+)
+
 func main() {
+	// Инициализация логгера с уровнем Debug (включает Debug, Info, Warn, Error)
+	logger.SetLogger(logger.New(zapcore.DebugLevel))
+
+	// Загружаем переменные окружения из .env файла
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found")
+		logger.Error("No .env file found")
+	} else {
+		logger.Debug("Successfully loaded .env file")
 	}
 
+	// Получаем порт из переменных окружения
 	port := os.Getenv("SERVER_PORT")
 	if port == "" {
 		port = "8080" // fallback
 	}
 
+	// Логируем полученный порт на уровне Debug
+	logger.Debugf("Using port: %s", port)
+
+	// Инициализация базы данных
 	database := db.Init()
 	h := handlers.Handler{DB: database}
 
+	// Инициализация маршрутов
 	r := router.SetupRoutes(h)
 
+	// Логируем запуск сервера
+	ctx := logger.ToContext(context.Background(), logger.Global())
+	logger.Infof(ctx, "Starting server on port: %s", port)
+
+	// Логируем успешный запуск
+	logger.Debug(ctx, "Routes setup completed")
+
 	// Запуск сервера
-	log.Printf("Starting server on port %s...", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		// Логируем ошибку при запуске сервера
+		logger.Fatalf(ctx, "Server failed: %v", err)
+	} else {
+		// Логируем успешный запуск сервера
+		logger.Debug(ctx, "Server started successfully")
+	}
 }
+
 
 
 
