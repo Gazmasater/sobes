@@ -87,52 +87,28 @@ http://localhost:8080/swagger/index.html
 
 
 
-func GetGender(name string) string {
-	var res struct {
-		Gender string `json:"gender"`
-	}
+Curl
 
-	apiURL := os.Getenv("GENDERIZE_API")
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
+curl -X 'DELETE' \
+  'http://localhost:8080/people/14' \
+  -H 'accept: application/json'
 
-	err := fetchJSON(ctx, fmt.Sprintf("%s?name=%s", apiURL, name), &res)
-	if err != nil {
-		return ""
-	}
+Request URL
 
-	return res.Gender
-}
+http://localhost:8080/people/14
 
-func GetAge(name string) int {
-	var res struct {
-		Age int `json:"age"`
-	}
+Server response
+Code	Details
+204	
+Response headers
 
-	apiURL := os.Getenv("AGIFY_API")
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
+ date: Wed,07 May 2025 14:21:18 GMT 
 
-	err := fetchJSON(ctx, fmt.Sprintf("%s?name=%s", apiURL, name), &res)
-	if err != nil {
-		return 0
-	}
+Responses
+Code	Description
+204	
 
-	return res.Age
-}
+No Content
+404	
 
-
-func fetchJSON[T any](ctx context.Context, url string, result *T) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return err
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	return json.NewDecoder(resp.Body).Decode(result)
-}
+Not Found
