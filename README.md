@@ -196,60 +196,7 @@ go run ./cmd/server
 http://localhost:8080/swagger/index.html
 
 
-kage models
-
-type Person struct {
-	ID         uint   `json:"id" gorm:"primaryKey"`
-	Name       string `json:"name"`
-	Surname    string `json:"surname"`
-	Patronymic string `json:"patronymic"`
-
-	Gender      string `json:"gender"`
-	Age         int    `json:"age"`
-	Nationality string `json:"nationality"`
-}
-
-type CreatePersonRequest struct {
-	Name       string `json:"name" example:"Dmitriy"`
-	Surname    string `json:"surname" example:"Ushakov"`
-	Patronymic string `json:"patronymic,omitempty" example:"Vasilevich"`
-}
-
-type Handler struct {
-	DB *gorm.DB
-}
-func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
-	var req models.CreatePersonRequest
-
-	// Декодирование запроса
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// Создание полной структуры Person с автозаполнением
-	p := models.Person{
-		Name:        req.Name,
-		Surname:     req.Surname,
-		Patronymic:  req.Patronymic,
-		Gender:      services.GetGender(req.Name),
-		Age:         services.GetAge(req.Name),
-		Nationality: services.GetNationality(req.Name),
-	}
-
-	// Сохранение в базу данных
-	if err := h.DB.Create(&p).Error; err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Ответ
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(p)
-}
-
-
-
+go clean -cache -modcache -testcache
 
 
 
