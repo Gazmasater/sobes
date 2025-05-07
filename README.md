@@ -86,89 +86,86 @@ http://localhost:8080/swagger/index.html
 
 
 func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	id := chi.URLParam(r, "id")
-	log.Printf("id=%s", id)
+	logger.Debug(ctx, "Update request received", "id", id)
 
 	var existing models.Person
 
-	// Найти по ID
 	if err := h.DB.First(&existing, id).Error; err != nil {
+		logger.Warn(ctx, "Person not found", "id", id, "err", err)
 		http.NotFound(w, r)
 		return
 	}
 
 	var req models.CreatePersonRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Warn(ctx, "Invalid JSON body", "err", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Обновление основных полей
+	// Обновление полей
+	nameChanged := req.Name != existing.Name
 	existing.Name = req.Name
 	existing.Surname = req.Surname
 	existing.Patronymic = req.Patronymic
 
-	// Если имя изменилось — запрашиваем новые значения
-	if req.Name != existing.Name {
-		age := services.GetAge(req.Name)
-
-		gender := services.GetGender(req.Name)
-
-		nationality := services.GetNationality(req.Name)
-
-		existing.Age = age
-		existing.Gender = gender
-		existing.Nationality = nationality
+	if nameChanged {
+		logger.Debug(ctx, "Name changed, fetching external data", "old_name", existing.Name, "new_name", req.Name)
+		existing.Age = services.GetAge(req.Name)
+		existing.Gender = services.GetGender(req.Name)
+		existing.Nationality = services.GetNationality(req.Name)
 	}
 
-	// Сохраняем
 	if err := h.DB.Save(&existing).Error; err != nil {
+		logger.Error(ctx, "Failed to update person", "id", id, "err", err)
 		http.Error(w, "Failed to update person", http.StatusInternalServerError)
 		return
 	}
 
+	logger.Info(ctx, "Person updated", "id", id)
+
 	if err := json.NewEncoder(w).Encode(existing); err != nil {
-		log.Printf("failed to encode response: %v", err)
+		logger.Error(ctx, "Failed to encode response", "err", err)
 		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 		return
 	}
 }
 
+
 func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	// Извлекаем ID параметр из URL
+	ctx := r.Context()
 	idStr := chi.URLParam(r, "id")
-	log.Printf("Received ID: %s", idStr)
+	logger.Debug(ctx, "Delete request received", "id", idStr)
 
 	if idStr == "" {
-		log.Printf("No ID provided in the URL!")
+		logger.Warn(ctx, "No ID provided in URL")
 		http.Error(w, `{"error":"missing ID"}`, http.StatusBadRequest)
 		return
 	}
 
-	// Преобразуем ID в число
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		log.Printf("Error converting ID: %v", err)
+		logger.Warn(ctx, "Invalid ID format", "id", idStr, "err", err)
 		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
 		return
 	}
 
 	var p models.Person
-	// Ищем человека по ID
 	if err := h.DB.First(&p, id).Error; err != nil {
-		log.Printf("Person not found with ID %d", id)
+		logger.Warn(ctx, "Person not found", "id", id, "err", err)
 		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
 		return
 	}
 
-	// Удаляем человека
 	if err := h.DB.Delete(&p).Error; err != nil {
-		log.Printf("Error deleting person with ID %d", id)
+		logger.Error(ctx, "Failed to delete person", "id", id, "err", err)
 		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
 		return
 	}
 
-	// Возвращаем статус 204 (No Content)
+	logger.Info(ctx, "Person deleted", "id", id)
 	w.WriteHeader(http.StatusNoContent)
 }
 
