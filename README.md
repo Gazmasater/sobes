@@ -87,52 +87,27 @@ http://localhost:8080/swagger/index.html
 
 
 
-func fetchJSON[T any](url string, target *T) error {
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return err
+func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
 	}
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080" // fallback
 	}
-	defer resp.Body.Close()
 
-	return json.NewDecoder(resp.Body).Decode(target)
+	database := db.Init()
+	h := handlers.Handler{DB: database}
+
+	r := router.SetupRoutes(h)
+
+	// Запуск сервера
+	log.Printf("Starting server on port %s...", port)
+	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
 
-func GetGender(name string) string {
-	var res struct {
-		Gender string `json:"gender"`
-	}
-
-	apiURL := os.Getenv("GENDERIZE_API")
-	err := fetchJSON(fmt.Sprintf("%s?name=%s", apiURL, name), &res)
-	if err != nil {
-		return ""
-	}
-
-	return res.Gender
-}
-
-func GetAge(name string) int {
-	var res struct {
-		Age int `json:"age"`
-	}
-
-	apiURL := os.Getenv("AGIFY_API")
-	err := fetchJSON(fmt.Sprintf("%s?name=%s", apiURL, name), &res)
-	if err != nil {
-		return 0
-	}
-
-	return res.Age
-}
 
 
 
