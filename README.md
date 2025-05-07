@@ -199,50 +199,32 @@ http://localhost:8080/swagger/index.html
 go clean -cache -modcache -testcache
 
 
-func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
-	var req models.CreatePersonRequest
+func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	log.Printf("id=%s", id)
+	var p models.Person
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// Поиск существующей записи
+	if err := h.DB.First(&p, id).Error; err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	var updated models.Person
+
+	// Декодирование новых данных из тела запроса
+	if err := json.NewDecoder(r.Body).Decode(&updated); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Получение данных из внешних API
-	age, err := services.GetAge(req.Name)
-	if err != nil {
-		http.Error(w, "Failed to get age", http.StatusInternalServerError)
-		return
-	}
+	// Обновление полей модели
+	h.DB.Model(&p).Updates(updated)
 
-	gender, err := services.GetGender(req.Name)
-	if err != nil {
-		http.Error(w, "Failed to get gender", http.StatusInternalServerError)
-		return
-	}
-
-	nationality, err := services.GetNationality(req.Name)
-	if err != nil {
-		http.Error(w, "Failed to get nationality", http.StatusInternalServerError)
-		return
-	}
-
-	p := models.Person{
-		Name:        req.Name,
-		Surname:     req.Surname,
-		Patronymic:  req.Patronymic,
-		Age:         age,
-		Gender:      gender,
-		Nationality: nationality,
-	}
-
-	if err := h.DB.Create(&p).Error; err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
+	// Ответ с обновлёнными данными
 	json.NewEncoder(w).Encode(p)
 }
+
 
 
 
