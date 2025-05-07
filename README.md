@@ -87,28 +87,5 @@ http://localhost:8080/swagger/index.html
 
 
 
-Curl
-
-curl -X 'DELETE' \
-  'http://localhost:8080/people/14' \
-  -H 'accept: application/json'
-
-Request URL
-
-http://localhost:8080/people/14
-
-Server response
-Code	Details
-204	
-Response headers
-
- date: Wed,07 May 2025 14:21:18 GMT 
-
-Responses
-Code	Description
-204	
-
-No Content
-404	
-
-Not Found
+internal/handlers/handlers.go:80:27: Error return value of `(*encoding/json.Encoder).Encode` is not checked (errcheck)
+        json.NewEncoder(w).Encode(p)
