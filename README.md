@@ -25,6 +25,8 @@ export PATH=$PATH:$(go env GOPATH)/bin
 swag init
 Создастся папка docs с документацией.
 
+
+
 func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -93,26 +95,6 @@ func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
-// GetPeople godoc
-// @Summary Получить список людей
-// @Description Возвращает список людей с возможностью фильтрации, сортировки и пагинации
-// @Tags people
-// @Accept json
-// @Produce json
-// @Param name query string false "Имя (например, Ivan)"
-// @Param surname query string false "Фамилия (например, Petrov)"
-// @Param patronymic query string false "Отчество (например, Ivanovich)"
-// @Param age query int false "Возраст (например, 30)"
-// @Param gender query string false "Пол (например, male, female)"
-// @Param nationality query string false "Национальность (например, Russian, American)"
-// @Param sort_by query string false "Поле сортировки (например, name, age, surname)"
-// @Param order query string false "Порядок сортировки (asc или desc)"
-// @Param limit query int false "Количество возвращаемых записей (по умолчанию 10)"
-// @Param offset query int false "Смещение (offset) для пагинации"
-// @Success 200 {array} models.Person
-// @Failure 500 {object} map[string]string
-// @Router /people [get]
 
 
 
