@@ -8,6 +8,8 @@ import (
 	"people/internal/db"
 	"people/internal/handlers"
 	"people/internal/router"
+
+	"github.com/joho/godotenv"
 )
 
 // @title           People API
@@ -16,6 +18,11 @@ import (
 // @host            localhost:8080
 // @BasePath        /
 func main() {
+
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+
 	database := db.Init()
 	h := handlers.Handler{DB: database}
 

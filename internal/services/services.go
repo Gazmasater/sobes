@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 )
 
 func GetGender(name string) string {
@@ -11,9 +12,10 @@ func GetGender(name string) string {
 		Gender string `json:"gender"`
 	}
 
-	resp, err := http.Get(fmt.Sprintf("https://api.genderize.io/?name=%s", name))
+	apiURL := os.Getenv("GENDERIZE_API")
+	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
 	if err != nil {
-		return "" // или логгируй ошибку, или возвращай "unknown"
+		return ""
 	}
 	defer resp.Body.Close()
 
@@ -29,7 +31,8 @@ func GetAge(name string) int {
 		Age int `json:"age"`
 	}
 
-	resp, err := http.Get(fmt.Sprintf("https://api.agify.io/?name=%s", name))
+	apiURL := os.Getenv("AGIFY_API")
+	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
 	if err != nil {
 		return 0
 	}
@@ -49,7 +52,8 @@ func GetNationality(name string) string {
 		} `json:"country"`
 	}
 
-	resp, err := http.Get(fmt.Sprintf("https://api.nationalize.io/?name=%s", name))
+	apiURL := os.Getenv("NATIONALIZE_API")
+	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
 	if err != nil {
 		return "unknown"
 	}
