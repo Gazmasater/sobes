@@ -86,38 +86,43 @@ http://localhost:8080/swagger/index.html
 
 
 func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	var req models.CreatePersonRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Warn(ctx, "Invalid JSON body", "err", err)
 		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+	logger.Debug(ctx, "Parsed request", "request", req)
 
-	// Нормализация (первая буква заглавная, остальные строчные)
+	// Нормализация
 	req.Name = pkg.NormalizeName(req.Name)
 	req.Surname = pkg.NormalizeName(req.Surname)
 	if req.Patronymic != "" {
 		req.Patronymic = pkg.NormalizeName(req.Patronymic)
 	}
+	logger.Debug(ctx, "Normalized fields", "name", req.Name, "surname", req.Surname, "patronymic", req.Patronymic)
 
-	// Валидация имени и фамилии (обязательные), отчество — опционально
+	// Валидация
 	if !pkg.IsValidName(req.Name) || !pkg.IsValidName(req.Surname) {
+		logger.Warn(ctx, "Validation failed for name/surname", "name", req.Name, "surname", req.Surname)
 		http.Error(w, "Name and surname must contain only letters and start with a capital letter", http.StatusBadRequest)
 		return
 	}
 	if req.Patronymic != "" && !pkg.IsValidName(req.Patronymic) {
+		logger.Warn(ctx, "Validation failed for patronymic", "patronymic", req.Patronymic)
 		http.Error(w, "Patronymic must contain only letters and start with a capital letter", http.StatusBadRequest)
 		return
 	}
 
-	// Получение данных из внешних API
+	// Внешние API
 	age := services.GetAge(req.Name)
-
 	gender := services.GetGender(req.Name)
-
 	nationality := services.GetNationality(req.Name)
 
-	// Создание и сохранение записи
+	logger.Debug(ctx, "External data fetched", "age", age, "gender", gender, "nationality", nationality)
+
 	p := models.Person{
 		Name:        req.Name,
 		Surname:     req.Surname,
@@ -128,15 +133,18 @@ func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.DB.Create(&p).Error; err != nil {
+		logger.Error(ctx, "Failed to save person", "err", err)
 		http.Error(w, "Failed to save person: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Ответ
+	logger.Info(ctx, "Person created", "id", p.ID)
+
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(p); err != nil {
-		log.Printf("failed to encode response: %v", err)
+		logger.Error(ctx, "Failed to encode response", "err", err)
 		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 		return
 	}
 }
+
