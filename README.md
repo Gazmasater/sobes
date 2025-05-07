@@ -87,60 +87,52 @@ http://localhost:8080/swagger/index.html
 
 
 
-gaz358@gaz358-BOD-WXX9:~/myprog/test$ golangci-lint run
-WARN The linter 'exportloopref' is deprecated (since v1.60.2) due to: Since Go1.22 (loopvar) this linter is no longer relevant. Replaced by copyloopvar. 
-ERRO [linters_context] exportloopref: This linter is fully inactivated: it will not produce any reports. 
-internal/services/services.go:17: 17-42 lines are duplicate of `internal/services/services.go:44-69` (dupl)
 func GetGender(name string) string {
-        var res struct {
-                Gender string `json:"gender"`
-        }
+	var res struct {
+		Gender string `json:"gender"`
+	}
 
-        apiURL := os.Getenv("GENDERIZE_API")
-        ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-        defer cancel()
+	apiURL := os.Getenv("GENDERIZE_API")
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
 
-        req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
-        if err != nil {
-                return ""
-        }
+	err := fetchJSON(ctx, fmt.Sprintf("%s?name=%s", apiURL, name), &res)
+	if err != nil {
+		return ""
+	}
 
-        resp, err := http.DefaultClient.Do(req)
-        if err != nil {
-                return ""
-        }
-        defer resp.Body.Close()
-
-        if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-                return ""
-        }
-
-        return res.Gender
+	return res.Gender
 }
-internal/services/services.go:44: 44-69 lines are duplicate of `internal/services/services.go:17-42` (dupl)
+
 func GetAge(name string) int {
-        var res struct {
-                Age int `json:"age"`
-        }
+	var res struct {
+		Age int `json:"age"`
+	}
 
-        apiURL := os.Getenv("AGIFY_API")
-        ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-        defer cancel()
+	apiURL := os.Getenv("AGIFY_API")
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
 
-        req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s?name=%s", apiURL, name), nil)
-        if err != nil {
-                return 0
-        }
+	err := fetchJSON(ctx, fmt.Sprintf("%s?name=%s", apiURL, name), &res)
+	if err != nil {
+		return 0
+	}
 
-        resp, err := http.DefaultClient.Do(req)
-        if err != nil {
-                return 0
-        }
-        defer resp.Body.Close()
+	return res.Age
+}
 
-        if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-                return 0
-        }
 
-        return res.Age
+func fetchJSON[T any](ctx context.Context, url string, result *T) error {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return json.NewDecoder(resp.Body).Decode(result)
 }
