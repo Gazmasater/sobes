@@ -87,14 +87,67 @@ http://localhost:8080/swagger/index.html
 
 
 
-internal/handlers/handlers.go:80:27: Error return value of `(*encoding/json.Encoder).Encode` is not checked (errcheck)
-        json.NewEncoder(w).Encode(p)
+func GetGender(name string) string {
+	var res struct {
+		Gender string `json:"gender"`
+	}
 
+	apiURL := os.Getenv("GENDERIZE_API")
+	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
 
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return ""
+	}
 
- if err := json.NewEncoder(w).Encode(p); err != nil {
-	log.Printf("failed to encode response: %v", err)
-	http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
-	return
+	return res.Gender
 }
+
+func GetAge(name string) int {
+	var res struct {
+		Age int `json:"age"`
+	}
+
+	apiURL := os.Getenv("AGIFY_API")
+	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+	if err != nil {
+		return 0
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return 0
+	}
+
+	return res.Age
+}
+
+func GetNationality(name string) string {
+	var res struct {
+		Country []struct {
+			CountryID string `json:"country_id"`
+		} `json:"country"`
+	}
+
+	apiURL := os.Getenv("NATIONALIZE_API")
+	resp, err := http.Get(fmt.Sprintf("%s?name=%s", apiURL, name))
+	if err != nil {
+		return unknown
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return unknown
+	}
+
+	if len(res.Country) > 0 {
+		return res.Country[0].CountryID
+	}
+
+	return unknown
+}
+
 
