@@ -77,6 +77,7 @@ func (es *ExternalServiceImpl) GetNationality(name string) string {
 	fmt.Printf("GetNationality URL=%s\n", url)
 	resp, err := http.Get(url)
 	if err != nil {
+		fmt.Println("GetNationality")
 		return ""
 	}
 	defer resp.Body.Close()
