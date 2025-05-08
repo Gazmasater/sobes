@@ -26,21 +26,6 @@ swag init
 Создастся папка docs с документацией.
 
 
-const (
-	readTimeout  = 10 * time.Second
-	writeTimeout = 10 * time.Second
-	idleTimeout  = 120 * time.Second
-)
-
-
-srv := &http.Server{
-	Addr:         ":" + port,
-	Handler:      r,
-	ReadTimeout:  readTimeout,
-	WriteTimeout: writeTimeout,
-	IdleTimeout:  idleTimeout,
-}
-
-
+git rm --cached textDB
 
 
