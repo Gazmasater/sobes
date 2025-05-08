@@ -3,15 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"people/internal/models"
+	"people/internal/services"
+	"people/pkg"
+	"people/pkg/logger"
 	"strconv"
 
 	"github.com/go-chi/chi"
 	"gorm.io/gorm"
-
-	"people/internal/models"
-	"people/internal/pkg"
-	"people/internal/pkg/logger"
-	"people/internal/services"
 )
 
 type Handler struct {

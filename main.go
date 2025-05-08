@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"os"
 	_ "people/docs"
+	"people/pkg/logger"
 	"time"
 
-	"people/internal/db"
 	"people/internal/handlers"
-	"people/internal/pkg/logger"
+	"people/internal/repository"
 	"people/internal/router"
 
 	"github.com/joho/godotenv"
@@ -44,7 +44,7 @@ func main() {
 	}
 	logger.Debugf(ctx, "Using port: %s", port)
 
-	database := db.Init()
+	database := repository.Init()
 
 	h := handlers.Handler{DB: database}
 

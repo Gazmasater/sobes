@@ -9,8 +9,10 @@ import (
 	"time"
 )
 
-const requestTimeout = 5 * time.Second
-const unknown = "unknown"
+const (
+	requestTimeout = 5 * time.Second
+	unknown        = "unknown"
+)
 
 func GetGender(name string) string {
 	var res struct {
