@@ -27,45 +27,52 @@ swag init
 
 
 
-gaz358@gaz358-BOD-WXX9:~/myprog/sobes$ golangci-lint run
-WARN The linter 'exportloopref' is deprecated (since v1.60.2) due to: Since Go1.22 (loopvar) this linter is no longer relevant. Replaced by copyloopvar. 
-ERRO [linters_context] exportloopref: This linter is fully inactivated: it will not produce any reports. 
-main.go:48:12: G114: Use of net/http serve function that has no support for setting timeouts (gosec)
-        if err := http.ListenAndServe(":"+port, r); err != nil {
-                  ^
-
-
-    func main() {
+func main() {
 	// Инициализация логгера
 	logger.SetLogger(logger.New(zapcore.DebugLevel))
 
 	// Создаём context
 	ctx := logger.ToContext(context.Background(), logger.Global())
 
+	// Загрузка .env
 	if err := godotenv.Load(); err != nil {
 		logger.Error(ctx, "No .env file found")
 	} else {
 		logger.Debug(ctx, "Successfully loaded .env file")
 	}
 
+	// Порт сервера
 	port := os.Getenv("SERVER_PORT")
 	if port == "" {
 		port = "8080"
 	}
 	logger.Debugf(ctx, "Using port: %s", port)
 
+	// Инициализация базы данных
 	database := db.Init()
+
+	// Инициализация обработчиков
 	h := handlers.Handler{DB: database}
+
+	// Настройка маршрутов
 	r := router.SetupRoutes(h)
 
 	logger.Infof(ctx, "Starting server on port: %s", port)
 
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	// Настройка HTTP-сервера с тайм-аутами
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      r,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	// Запуск сервера
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Fatalf(ctx, "Server failed: %v", err)
 	}
 }
-
-
 
 
 
