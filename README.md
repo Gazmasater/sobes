@@ -13,6 +13,16 @@ internal/
         └── domain.go
 
 
+ curl -X POST http://localhost:8080/people \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Dmitriy",
+    "surname": "Ushakov",
+    "patronymic": "Vasilevich"
+}'
+
+
+
 
 go install github.com/swaggo/swag/cmd/swag@latest
 go get -u github.com/swaggo/http-swagger
