@@ -57,20 +57,16 @@ func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Сортировка
+	// Сортировка без выбора порядка
 	sortBy := params.Get("sort_by")
-	order := params.Get("order")
 	if sortBy != "" {
-		if order != "desc" {
-			order = "asc"
-		}
-		// Защита от SQL-инъекций: разрешён только whitelisted список полей
+		// Защита от SQL-инъекций: разрешён только whitelist
 		allowedSorts := map[string]bool{
 			"id": true, "name": true, "surname": true,
 			"patronymic": true, "age": true, "gender": true, "nationality": true,
 		}
 		if allowedSorts[sortBy] {
-			query = query.Order(sortBy + " " + order)
+			query = query.Order(sortBy)
 		}
 	}
 
