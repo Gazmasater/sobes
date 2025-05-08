@@ -35,7 +35,7 @@ func Init() *gorm.DB {
 	}
 
 	// Автоматическая миграция
-	if err := db.AutoMigrate(&adapterhttp.Person{}); err != nil {
+	if err := db.AutoMigrate(&adapterhttp.PersonResponce{}); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
 

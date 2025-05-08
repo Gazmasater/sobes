@@ -64,7 +64,7 @@ func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debug(ctx, "External data fetched", "age", age, "gender", gender, "nationality", nationality)
 
-	p := Person{
+	p := PersonResponse{
 		Name:        req.Name,
 		Surname:     req.Surname,
 		Patronymic:  req.Patronymic,
@@ -111,7 +111,7 @@ func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var people []Person
+	var people []PersonResponse
 	query := h.DB
 
 	// Фильтрация
@@ -193,7 +193,7 @@ func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	logger.Debug(ctx, "Update request received", "id", id)
 
-	var existing Person
+	var existing PersonResponse
 
 	if err := h.DB.First(&existing, id).Error; err != nil {
 		logger.Warn(ctx, "Person not found", "id", id, "err", err)
@@ -262,7 +262,7 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var p Person
+	var p PersonResponse
 	if err := h.DB.First(&p, id).Error; err != nil {
 		logger.Warn(ctx, "Person not found", "id", id, "err", err)
 		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
