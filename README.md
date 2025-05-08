@@ -27,9 +27,9 @@ swag init
 
 
 
-linters:
-  disable:
-    - exportloopref  # можно удалить
+const readTimeout = 10
+const writeTimeout = 10
+const idleTimeout = 120
 
 
 
