@@ -27,67 +27,41 @@ swag init
 
 
 
-func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+gaz358@gaz358-BOD-WXX9:~/myprog/sobes$ golangci-lint run
+WARN The linter 'exportloopref' is deprecated (since v1.60.2) due to: Since Go1.22 (loopvar) this linter is no longer relevant. Replaced by copyloopvar. 
+ERRO [linters_context] exportloopref: This linter is fully inactivated: it will not produce any reports. 
+main.go:48:12: G114: Use of net/http serve function that has no support for setting timeouts (gosec)
+        if err := http.ListenAndServe(":"+port, r); err != nil {
+                  ^
 
-	var people []models.Person
-	query := h.DB
 
-	// Фильтрация
-	params := r.URL.Query()
+    func main() {
+	// Инициализация логгера
+	logger.SetLogger(logger.New(zapcore.DebugLevel))
 
-	if gender := params.Get("gender"); gender != "" {
-		query = query.Where("gender = ?", gender)
-	}
-	if nationality := params.Get("nationality"); nationality != "" {
-		query = query.Where("nationality = ?", nationality)
-	}
-	if name := params.Get("name"); name != "" {
-		query = query.Where("name ILIKE ?", "%"+name+"%")
-	}
-	if surname := params.Get("surname"); surname != "" {
-		query = query.Where("surname ILIKE ?", "%"+surname+"%")
-	}
-	if patronymic := params.Get("patronymic"); patronymic != "" {
-		query = query.Where("patronymic ILIKE ?", "%"+patronymic+"%")
-	}
-	if age := params.Get("age"); age != "" {
-		if ageInt, err := strconv.Atoi(age); err == nil {
-			query = query.Where("age = ?", ageInt)
-		}
+	// Создаём context
+	ctx := logger.ToContext(context.Background(), logger.Global())
+
+	if err := godotenv.Load(); err != nil {
+		logger.Error(ctx, "No .env file found")
+	} else {
+		logger.Debug(ctx, "Successfully loaded .env file")
 	}
 
-	// Сортировка без выбора порядка
-	sortBy := params.Get("sort_by")
-	if sortBy != "" {
-		// Защита от SQL-инъекций: разрешён только whitelist
-		allowedSorts := map[string]bool{
-			"id": true, "name": true, "surname": true,
-			"patronymic": true, "age": true, "gender": true, "nationality": true,
-		}
-		if allowedSorts[sortBy] {
-			query = query.Order(sortBy)
-		}
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080"
 	}
+	logger.Debugf(ctx, "Using port: %s", port)
 
-	// Пагинация
-	limit, _ := strconv.Atoi(params.Get("limit"))
-	offset, _ := strconv.Atoi(params.Get("offset"))
-	if limit == 0 {
-		limit = 10
-	}
-	query = query.Limit(limit).Offset(offset)
+	database := db.Init()
+	h := handlers.Handler{DB: database}
+	r := router.SetupRoutes(h)
 
-	// Получение из базы
-	if err := query.Find(&people).Error; err != nil {
-		logger.Error(ctx, "DB query failed", "error", err)
-		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
-		return
-	}
+	logger.Infof(ctx, "Starting server on port: %s", port)
 
-	if err := json.NewEncoder(w).Encode(people); err != nil {
-		logger.Error(ctx, "Failed to encode response", "error", err)
-		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		logger.Fatalf(ctx, "Server failed: %v", err)
 	}
 }
 
