@@ -3,7 +3,6 @@ package proto_http
 import (
 	"encoding/json"
 	"net/http"
-	"people/internal/models"
 	"people/internal/services"
 	"people/pkg"
 	"people/pkg/logger"
@@ -29,7 +28,7 @@ type Handler struct {
 // @Router /people [post]
 func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	var req models.CreatePersonRequest
+	var req CreatePersonRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Warn(ctx, "Invalid JSON body", "err", err)
@@ -65,7 +64,7 @@ func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debug(ctx, "External data fetched", "age", age, "gender", gender, "nationality", nationality)
 
-	p := models.Person{
+	p := Person{
 		Name:        req.Name,
 		Surname:     req.Surname,
 		Patronymic:  req.Patronymic,
@@ -112,7 +111,7 @@ func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var people []models.Person
+	var people []Person
 	query := h.DB
 
 	// Фильтрация
@@ -194,7 +193,7 @@ func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	logger.Debug(ctx, "Update request received", "id", id)
 
-	var existing models.Person
+	var existing Person
 
 	if err := h.DB.First(&existing, id).Error; err != nil {
 		logger.Warn(ctx, "Person not found", "id", id, "err", err)
@@ -202,7 +201,7 @@ func (h *Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req models.CreatePersonRequest
+	var req CreatePersonRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Warn(ctx, "Invalid JSON body", "err", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -263,7 +262,7 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var p models.Person
+	var p Person
 	if err := h.DB.First(&p, id).Error; err != nil {
 		logger.Warn(ctx, "Person not found", "id", id, "err", err)
 		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)

@@ -1,4 +1,4 @@
-package models
+package proto_http
 
 type Person struct {
 	ID         uint   `json:"id" gorm:"primaryKey"`

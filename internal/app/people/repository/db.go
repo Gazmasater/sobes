@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"people/internal/models"
+	"people/internal/app/people/adapters/proto_http"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -35,7 +35,7 @@ func Init() *gorm.DB {
 	}
 
 	// Автоматическая миграция
-	if err := db.AutoMigrate(&models.Person{}); err != nil {
+	if err := db.AutoMigrate(&proto_http.Person{}); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
 
