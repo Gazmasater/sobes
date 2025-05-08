@@ -35,83 +35,46 @@ git rm --cached textDB
 
 
 
-1. Создание интерфейса PersonRepository
-Создайте файл, например, internal/app/repository/person_repository.go:
-
-go
-Копировать
-Редактировать
-package repository
-
-import "people/internal/app/people"
-
-// PersonRepository определяет интерфейс для работы с сущностью Person
-type PersonRepository interface {
-	Create(person people.Person) (people.Person, error)
-}
-2. Реализация интерфейса (с GORM, например)
-Создайте файл internal/app/repository/person_gorm.go:
-
-go
-Копировать
-Редактировать
-package repository
+package adapterhttp
 
 import (
-	"people/internal/app/people"
-	"gorm.io/gorm"
-)
-
-// GormPersonRepository реализация PersonRepository через GORM
-type GormPersonRepository struct {
-	db *gorm.DB
-}
-
-// NewPersonRepository создаёт новый GormPersonRepository
-func NewPersonRepository(db *gorm.DB) *GormPersonRepository {
-	return &GormPersonRepository{db: db}
-}
-
-// Create сохраняет нового человека в базу данных
-func (r *GormPersonRepository) Create(person people.Person) (people.Person, error) {
-	if err := r.db.Create(&person).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-}
-3. Настройка GORM и подключение к БД
-Пример инициализации GORM в main.go:
-
-go
-Копировать
-Редактировать
-package main
-
-import (
-	"log"
-	"people/internal/app/repository"
-	"people/internal/app/services"
+	"encoding/json"
+	"net/http"
 	"people/internal/app/usecase"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"people/internal/app/people"
 )
 
-func main() {
-	dsn := "host=localhost user=postgres password=qwert dbname=people port=5432 sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal("failed to connect database:", err)
+type Handler struct {
+	CreateUC *usecase.CreatePersonUseCase
+}
+
+func NewHandler(createUC *usecase.CreatePersonUseCase) *Handler {
+	return &Handler{CreateUC: createUC}
+}
+
+func (h *Handler) CreatePersonHandler(w http.ResponseWriter, r *http.Request) {
+	var req CreatePersonRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
 	}
 
-	// Автоматическая миграция
-	db.AutoMigrate(&people.Person{})
+	person := people.Person{
+		Name:       req.Name,
+		Surname:    req.Surname,
+		Patronymic: req.Patronymic,
+	}
 
-	personRepo := repository.NewPersonRepository(db)
-	extService := services.NewExternalService() // ваш внешний сервис
+	createdPerson, err := h.CreateUC.Execute(r.Context(), person)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	createUC := usecase.NewCreatePersonUseCase(personRepo, extService)
+	response := ToResponse(createdPerson)
 
-	// Здесь вы подключаете createUC к HTTP-обработчику, как я показывал выше
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 
