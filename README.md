@@ -27,10 +27,9 @@ swag init
 
 
 
-gaz358@gaz358-BOD-WXX9:~/myprog/sobes$ golangci-lint run
-WARN The linter 'exportloopref' is deprecated (since v1.60.2) due to: Since Go1.22 (loopvar) this linter is no longer relevant. Replaced by copyloopvar. 
-ERRO [linters_context] exportloopref: This linter is fully inactivated: it will not produce any reports. 
-gaz358@gaz358-BOD-WXX9:~/myprog/sobes$ 
+linters:
+  disable:
+    - exportloopref  # можно удалить
 
 
 
