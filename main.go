@@ -8,9 +8,8 @@ import (
 	"people/pkg/logger"
 	"time"
 
-	"people/internal/handlers"
-	"people/internal/repository"
-	"people/internal/router"
+	"people/internal/app/people/adapters/proto_http"
+	"people/internal/app/people/repository"
 
 	"github.com/joho/godotenv"
 	"go.uber.org/zap/zapcore"
@@ -45,10 +44,9 @@ func main() {
 	logger.Debugf(ctx, "Using port: %s", port)
 
 	database := repository.Init()
+	h := proto_http.Handler{DB: database}
 
-	h := handlers.Handler{DB: database}
-
-	r := router.SetupRoutes(h)
+	r := proto_http.SetupRoutes(h)
 
 	logger.Infof(ctx, "Starting server on port: %s", port)
 

@@ -1,14 +1,12 @@
-package router
+package proto_http
 
 import (
-	"people/internal/handlers"
-
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-func SetupRoutes(h handlers.Handler) *chi.Mux {
+func SetupRoutes(h Handler) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)

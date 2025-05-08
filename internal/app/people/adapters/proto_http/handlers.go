@@ -1,4 +1,4 @@
-package handlers
+package proto_http
 
 import (
 	"encoding/json"
