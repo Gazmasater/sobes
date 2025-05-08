@@ -60,6 +60,27 @@ import (
 	"time"
 )
 
+
+package adapterhttp
+
+import "your_project/internal/app/people/domain"
+
+// Маппинг из domain.Person в PersonResponse.
+func toResponse(p domain.Person) PersonResponse {
+	return PersonResponse{
+		ID:          p.ID,
+		Name:        p.Name,
+		Surname:     p.Surname,
+		Patronymic:  p.Patronymic,
+		Age:         p.Age,
+		Gender:      p.Gender,
+		Nationality: p.Nationality,
+	}
+}
+
+
+
+
 // ExternalService интерфейс для внешних сервисов
 type ExternalService interface {
 	GetAge(name string) int
