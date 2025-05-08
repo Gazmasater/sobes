@@ -16,9 +16,9 @@ internal/
  curl -X POST http://localhost:8080/people \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Dmitriy",
-    "surname": "Ushakov",
-    "patronymic": "Vasilevich"
+    "name": "Ivan",
+    "surname": "Selivanov",
+    "patronymic": "Igorevich"
 }'
 
 
