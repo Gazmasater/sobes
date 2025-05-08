@@ -7,21 +7,18 @@ import (
 	"os"
 )
 
-// ExternalService интерфейс для внешних сервисов
 type ExternalService interface {
 	GetAge(name string) int
 	GetGender(name string) string
 	GetNationality(name string) string
 }
 
-// ExternalServiceImpl структура, которая реализует интерфейс ExternalService
 type ExternalServiceImpl struct {
 	AgifyAPI       string
 	GenderizeAPI   string
 	NationalizeAPI string
 }
 
-// NewExternalService создает новый экземпляр ExternalService с API URL
 func NewExternalService() *ExternalServiceImpl {
 	return &ExternalServiceImpl{
 		AgifyAPI:       os.Getenv("AGIFY_API"),
@@ -30,9 +27,14 @@ func NewExternalService() *ExternalServiceImpl {
 	}
 }
 
-// GetAge получает возраст по имени через API Agify
 func (es *ExternalServiceImpl) GetAge(name string) int {
+
+	fmt.Printf("GetAge NAME=%s\n", name)
+	fmt.Printf("GetAge API=%s\n", es.AgifyAPI)
+
 	url := fmt.Sprintf("%s?name=%s", es.AgifyAPI, name)
+	fmt.Printf("GetAge URL=%s\n", url)
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return 0
@@ -46,11 +48,11 @@ func (es *ExternalServiceImpl) GetAge(name string) int {
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return 0
 	}
+	fmt.Printf("GetAge AGE=%d\n", result.Age)
 
 	return result.Age
 }
 
-// GetGender получает пол по имени через API Genderize
 func (es *ExternalServiceImpl) GetGender(name string) string {
 	url := fmt.Sprintf("%s?name=%s", es.GenderizeAPI, name)
 	resp, err := http.Get(url)
@@ -70,9 +72,9 @@ func (es *ExternalServiceImpl) GetGender(name string) string {
 	return result.Gender
 }
 
-// GetNationality получает национальность по имени через API Nationalize
 func (es *ExternalServiceImpl) GetNationality(name string) string {
 	url := fmt.Sprintf("%s?name=%s", es.NationalizeAPI, name)
+	fmt.Printf("GetNationality URL=%s\n", url)
 	resp, err := http.Get(url)
 	if err != nil {
 		return ""

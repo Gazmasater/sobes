@@ -3,18 +3,17 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"people/internal/app/people"
 	"people/internal/app/people/repos"
 	"people/internal/serv"
 )
 
-// CreatePersonUseCase структура для обработки создания человека
 type CreatePersonUseCase struct {
 	PersonRepository repos.PersonRepository
 	ExternalService  serv.ExternalService
 }
 
-// NewCreatePersonUseCase конструктор для создания нового UseCase
 func NewCreatePersonUseCase(pr repos.PersonRepository, es serv.ExternalService) *CreatePersonUseCase {
 	return &CreatePersonUseCase{
 		PersonRepository: pr,
@@ -22,19 +21,21 @@ func NewCreatePersonUseCase(pr repos.PersonRepository, es serv.ExternalService) 
 	}
 }
 
-// Execute метод, который выполняет логику создания человека
 func (uc *CreatePersonUseCase) Execute(ctx context.Context, req people.Person) (people.Person, error) {
-	// Получаем данные из внешнего API
-	age := uc.ExternalService.GetAge(req.Name)
-	gender := uc.ExternalService.GetGender(req.Name)
-	nationality := uc.ExternalService.GetNationality(req.Name)
 
-	// Проверяем, что данные валидны
+	fmt.Printf("Execute   NAME=%s\n", req.Name)
+	age := uc.ExternalService.GetAge(req.Name)
+	fmt.Printf("Execute AGE=%d\n", age)
+	gender := uc.ExternalService.GetGender(req.Name)
+	fmt.Printf("Execute GENDER=%s\n", gender)
+
+	nationality := uc.ExternalService.GetNationality(req.Name)
+	fmt.Printf("Execute NATIONAL=%s\n", nationality)
+
 	if age <= 0 || gender == "" || nationality == "" {
 		return people.Person{}, errors.New("failed to fetch valid external data")
 	}
 
-	// Создаем структуру человека с полученными данными
 	person := people.Person{
 		Name:        req.Name,
 		Surname:     req.Surname,
@@ -44,12 +45,10 @@ func (uc *CreatePersonUseCase) Execute(ctx context.Context, req people.Person) (
 		Nationality: nationality,
 	}
 
-	// Сохраняем человека в базе данных
 	createdPerson, err := uc.PersonRepository.Create(person)
 	if err != nil {
 		return people.Person{}, err
 	}
 
-	// Возвращаем созданного человека
 	return createdPerson, nil
 }

@@ -2,32 +2,23 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
-	"os"
 	_ "people/docs"
 	"people/pkg/logger"
-	"time"
 
+	"people/internal/app/people"
 	"people/internal/app/people/adapters/adapterhttp"
-	"people/internal/app/people/repository"
+	"people/internal/app/people/repos"
+	"people/internal/app/people/usecase"
+	"people/internal/serv"
 
 	"github.com/joho/godotenv"
-	"go.uber.org/zap/zapcore"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-const (
-	readTimeout  = 10 * time.Second
-	writeTimeout = 10 * time.Second
-	idleTimeout  = 120 * time.Second
-)
-
-// @title           People API
-// @version         1.0
-// @description     API for managing people.
-// @host            localhost:8080
-// @BasePath        /
 func main() {
-	logger.SetLogger(logger.New(zapcore.DebugLevel))
 
 	ctx := logger.ToContext(context.Background(), logger.Global())
 
@@ -37,28 +28,20 @@ func main() {
 		logger.Debug(ctx, "Successfully loaded .env file")
 	}
 
-	port := os.Getenv("SERVER_PORT")
-	if port == "" {
-		port = "8080"
-	}
-	logger.Debugf(ctx, "Using port: %s", port)
-
-	database := repository.Init()
-	h := adapterhttp.Handler{DB: database}
-
-	r := adapterhttp.SetupRoutes(h)
-
-	logger.Infof(ctx, "Starting server on port: %s", port)
-
-	srv := &http.Server{
-		Addr:         ":" + port,
-		Handler:      r,
-		ReadTimeout:  readTimeout,
-		WriteTimeout: writeTimeout,
-		IdleTimeout:  idleTimeout,
+	dsn := "host=localhost user=postgres password=qwert dbname=people port=5432 sslmode=disable"
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatal("failed to connect to DB:", err)
 	}
 
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Fatalf(ctx, "Server failed: %v", err)
-	}
+	db.AutoMigrate(&people.Person{})
+
+	repo := repos.NewPersonRepository(db)
+	extService := serv.NewExternalService()
+	createUC := usecase.NewCreatePersonUseCase(repo, extService)
+	handler := adapterhttp.NewHandler(createUC)
+
+	r := adapterhttp.SetupRoutes(handler)
+	log.Println("server started on :8080")
+	http.ListenAndServe(":8080", r)
 }
