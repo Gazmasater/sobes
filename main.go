@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	_ "people/docs"
+	"time"
 
 	"people/internal/db"
 	"people/internal/handlers"
@@ -15,16 +16,20 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+const (
+	readTimeout  = 10 * time.Second
+	writeTimeout = 10 * time.Second
+	idleTimeout  = 120 * time.Second
+)
+
 // @title           People API
 // @version         1.0
 // @description     API for managing people.
 // @host            localhost:8080
 // @BasePath        /
 func main() {
-	// Инициализация логгера
 	logger.SetLogger(logger.New(zapcore.DebugLevel))
 
-	// Создаём context
 	ctx := logger.ToContext(context.Background(), logger.Global())
 
 	if err := godotenv.Load(); err != nil {
@@ -40,12 +45,22 @@ func main() {
 	logger.Debugf(ctx, "Using port: %s", port)
 
 	database := db.Init()
+
 	h := handlers.Handler{DB: database}
+
 	r := router.SetupRoutes(h)
 
 	logger.Infof(ctx, "Starting server on port: %s", port)
 
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      r,
+		ReadTimeout:  readTimeout,
+		WriteTimeout: writeTimeout,
+		IdleTimeout:  idleTimeout,
+	}
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Fatalf(ctx, "Server failed: %v", err)
 	}
 }
