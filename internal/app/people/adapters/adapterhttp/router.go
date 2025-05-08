@@ -1,4 +1,4 @@
-package proto_http
+package adapterhttp
 
 import (
 	"github.com/go-chi/chi"

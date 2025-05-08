@@ -96,7 +96,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Person"
+                                "$ref": "#/definitions/adapterhttp.Person"
                             }
                         }
                     },
@@ -130,7 +130,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreatePersonRequest"
+                            "$ref": "#/definitions/adapterhttp.CreatePersonRequest"
                         }
                     }
                 ],
@@ -138,7 +138,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Person"
+                            "$ref": "#/definitions/adapterhttp.Person"
                         }
                     },
                     "400": {
@@ -180,7 +180,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.CreatePersonRequest"
+                            "$ref": "#/definitions/adapterhttp.CreatePersonRequest"
                         }
                     }
                 ],
@@ -188,7 +188,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.CreatePersonRequest"
+                            "$ref": "#/definitions/adapterhttp.CreatePersonRequest"
                         }
                     },
                     "400": {
@@ -244,7 +244,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.CreatePersonRequest": {
+        "adapterhttp.CreatePersonRequest": {
             "type": "object",
             "properties": {
                 "name": {
@@ -261,7 +261,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.Person": {
+        "adapterhttp.Person": {
             "type": "object",
             "properties": {
                 "age": {

@@ -1,4 +1,4 @@
-package proto_http
+package adapterhttp
 
 import (
 	"encoding/json"
@@ -22,8 +22,8 @@ type Handler struct {
 // @Tags people
 // @Accept json
 // @Produce json
-// @Param person body models.CreatePersonRequest true "Данные для создания"
-// @Success 200 {object} models.Person
+// @Param person body CreatePersonRequest true "Данные для создания"
+// @Success 200 {object} Person
 // @Failure 400 {object} map[string]string
 // @Router /people [post]
 func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +105,7 @@ func (h *Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 // @Param order query string false "Порядок сортировки (asc или desc)"
 // @Param limit query int false "Количество возвращаемых записей (по умолчанию 10)"
 // @Param offset query int false "Смещение (offset) для пагинации"
-// @Success 200 {array} models.Person
+// @Success 200 {array} Person
 // @Failure 500 {object} map[string]string
 // @Router /people [get]
 func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
@@ -183,8 +183,8 @@ func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
 // @Accept  json
 // @Produce  json
 // @Param id path int true "ID человека"
-// @Param person body models.CreatePersonRequest true "Обновлённые данные"
-// @Success 200 {object} models.CreatePersonRequest
+// @Param person body CreatePersonRequest true "Обновлённые данные"
+// @Success 200 {object} CreatePersonRequest
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /people/{id} [put]

@@ -1,4 +1,4 @@
-package proto_http
+package adapterhttp
 
 type Person struct {
 	ID         uint   `json:"id" gorm:"primaryKey"`

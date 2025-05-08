@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  models.CreatePersonRequest:
+  adapterhttp.CreatePersonRequest:
     properties:
       name:
         example: Dmitriy
@@ -12,7 +12,7 @@ definitions:
         example: Ushakov
         type: string
     type: object
-  models.Person:
+  adapterhttp.Person:
     properties:
       age:
         type: integer
@@ -90,7 +90,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/models.Person'
+              $ref: '#/definitions/adapterhttp.Person'
             type: array
         "500":
           description: Internal Server Error
@@ -112,14 +112,14 @@ paths:
         name: person
         required: true
         schema:
-          $ref: '#/definitions/models.CreatePersonRequest'
+          $ref: '#/definitions/adapterhttp.CreatePersonRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Person'
+            $ref: '#/definitions/adapterhttp.Person'
         "400":
           description: Bad Request
           schema:
@@ -165,14 +165,14 @@ paths:
         name: person
         required: true
         schema:
-          $ref: '#/definitions/models.CreatePersonRequest'
+          $ref: '#/definitions/adapterhttp.CreatePersonRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.CreatePersonRequest'
+            $ref: '#/definitions/adapterhttp.CreatePersonRequest'
         "400":
           description: Bad Request
           schema:

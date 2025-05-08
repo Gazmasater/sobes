@@ -8,7 +8,7 @@ import (
 	"people/pkg/logger"
 	"time"
 
-	"people/internal/app/people/adapters/proto_http"
+	"people/internal/app/people/adapters/adapterhttp"
 	"people/internal/app/people/repository"
 
 	"github.com/joho/godotenv"
@@ -44,9 +44,9 @@ func main() {
 	logger.Debugf(ctx, "Using port: %s", port)
 
 	database := repository.Init()
-	h := proto_http.Handler{DB: database}
+	h := adapterhttp.Handler{DB: database}
 
-	r := proto_http.SetupRoutes(h)
+	r := adapterhttp.SetupRoutes(h)
 
 	logger.Infof(ctx, "Starting server on port: %s", port)
 
