@@ -1,12 +1,17 @@
-people/
-├── cmd/
-│   └── server/
-│       └── main.go
-├── internal/
-│   ├── db/
-│   ├── handlers/
-│   └── router/
-│       └── router.go
+internal/
+└── app/
+    └── mydomain/
+        ├── usecase/
+        │   ├── user_usecase.go        # Бизнес-логика
+        │   └── user_usecase_iface.go  # Интерфейс, например UserRepository
+        ├── repository/
+        │   └── postgres/
+        │       └── user_repository.go# Реализация интерфейса
+        ├── adapters/
+        │   └── http/
+        │       └── handler.go         # Использует интерфейс Usecase
+        └── domain.go
+
 
 
 go install github.com/swaggo/swag/cmd/swag@latest
