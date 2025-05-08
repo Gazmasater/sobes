@@ -4,17 +4,18 @@ import (
 	"context"
 	"errors"
 	"people/internal/app/people"
+	"people/internal/app/people/repos"
 	"people/internal/serv"
 )
 
 // CreatePersonUseCase структура для обработки создания человека
 type CreatePersonUseCase struct {
-	PersonRepository repository.PersonRepository
+	PersonRepository repos.PersonRepository
 	ExternalService  serv.ExternalService
 }
 
 // NewCreatePersonUseCase конструктор для создания нового UseCase
-func NewCreatePersonUseCase(pr repository.PersonRepository, es serv.ExternalService) *CreatePersonUseCase {
+func NewCreatePersonUseCase(pr repos.PersonRepository, es serv.ExternalService) *CreatePersonUseCase {
 	return &CreatePersonUseCase{
 		PersonRepository: pr,
 		ExternalService:  es,
