@@ -99,3 +99,24 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/adapters/adapterhttp/handlers.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "MissingFieldOrMethod",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "MissingFieldOrMethod"
+		}
+	},
+	"severity": 8,
+	"message": "h.DB undefined (type *Handler has no field or method DB)",
+	"source": "compiler",
+	"startLineNumber": 71,
+	"startColumn": 14,
+	"endLineNumber": 71,
+	"endColumn": 16
+}]
