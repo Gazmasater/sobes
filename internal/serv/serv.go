@@ -31,6 +31,8 @@ func NewExternalService() *ExternalServiceImpl {
 func (es *ExternalServiceImpl) GetAge(ctx context.Context, name string) int {
 	url := fmt.Sprintf("%s?name=%s", es.AgifyAPI, name)
 
+	fmt.Printf("GetAge URL=%s", url)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return 0
