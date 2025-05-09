@@ -62,97 +62,18 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
 
 
-package repos
+package usecase
 
 import (
 	"context"
 	"people/internal/app/people"
 )
 
-type PersonRepository interface {
-	Create(ctx context.Context, person people.Person) (people.Person, error)
-	Delete(ctx context.Context, id uint) error // Новый метод для удаления
-}
-
-
-package repos
-
-import (
-	"context"
-	"people/internal/app/people"
-
-	"gorm.io/gorm"
-)
-
-// GormPersonRepository реализация PersonRepository через GORM
-type GormPersonRepository struct {
-	db *gorm.DB
-}
-
-// NewPersonRepository создаёт новый GormPersonRepository
-func NewPersonRepository(db *gorm.DB) *GormPersonRepository {
-	return &GormPersonRepository{db: db}
-}
-
-// Create сохраняет нового человека в базу данных
-func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
-	if err := r.db.Create(&person).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-}
-
-// Delete удаляет человека по ID
-func (r *GormPersonRepository) Delete(ctx context.Context, id uint) error {
-	if err := r.db.Delete(&people.Person{}, id).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
-
-package adapterhttp
-
-import (
-	"fmt"
-	"net/http"
-	"strconv"
-
-	"people/internal/app/people/usecase"
-)
-
-type Handler struct {
-	CreateUC   *usecase.CreatePersonUseCase
-	DeleteUC   *usecase.DeletePersonUseCase // Добавляем новый UseCase для удаления
-}
-
-func NewHandler(createUC *usecase.CreatePersonUseCase, deleteUC *usecase.DeletePersonUseCase) Handler {
-	return Handler{CreateUC: createUC, DeleteUC: deleteUC}
-}
-
-func (h Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
-	// Обработчик для создания человека
-}
-
-func (h Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	// Извлекаем ID из URL
-	idStr := r.URL.Path[len("/persons/"):]
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
-		return
-	}
-
-	fmt.Printf("Deleting person with ID: %d\n", id)
-
-	// Вызываем UseCase для удаления
-	err = h.DeleteUC.Execute(r.Context(), uint(id))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+type PersonUseCase interface {
+	// Создание новой персоны
+	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
+	// Удаление персоны по ID
+	DeletePerson(ctx context.Context, id uint) error
 }
 
 
@@ -162,32 +83,118 @@ import (
 	"context"
 	"people/internal/app/people"
 	"people/internal/app/people/repos"
+	"people/internal/serv"
 )
 
-type DeletePersonUseCase struct {
-	Repo repos.PersonRepository
+type PersonUseCase struct {
+	CreatePersonUseCase *CreatePersonUseCase
+	DeletePersonUseCase *DeletePersonUseCase
 }
 
-func NewDeletePersonUseCase(repo repos.PersonRepository) *DeletePersonUseCase {
-	return &DeletePersonUseCase{Repo: repo}
+func NewPersonUseCase(
+	createUC *CreatePersonUseCase,
+	deleteUC *DeletePersonUseCase,
+) *PersonUseCase {
+	return &PersonUseCase{
+		CreatePersonUseCase: createUC,
+		DeletePersonUseCase: deleteUC,
+	}
 }
 
-func (uc *DeletePersonUseCase) Execute(ctx context.Context, id uint) error {
-	return uc.Repo.Delete(ctx, id)
+// Реализация методов интерфейса для создания и удаления
+func (uc *PersonUseCase) CreatePerson(ctx context.Context, req people.Person) (people.Person, error) {
+	return uc.CreatePersonUseCase.Execute(ctx, req)
+}
+
+func (uc *PersonUseCase) DeletePerson(ctx context.Context, id uint) error {
+	return uc.DeletePersonUseCase.Execute(ctx, id)
 }
 
 
-deleteUC := usecase.NewDeletePersonUseCase(personRepo)
-createUC := usecase.NewCreatePersonUseCase(personRepo)
+package handlers
 
-handler := adapterhttp.NewHandler(createUC, deleteUC)
+import (
+	"context"
+	"fmt"
+	"people/internal/app/people"
+	"people/internal/app/people/usecase"
+)
+
+type Handler struct {
+	PersonUseCase usecase.PersonUseCase
+}
+
+func NewHandler(personUseCase usecase.PersonUseCase) *Handler {
+	return &Handler{
+		PersonUseCase: personUseCase,
+	}
+}
+
+// Обработчик для создания
+func (h *Handler) CreatePersonHandler(ctx context.Context, person people.Person) (people.Person, error) {
+	return h.PersonUseCase.CreatePerson(ctx, person)
+}
+
+// Обработчик для удаления
+func (h *Handler) DeletePersonHandler(ctx context.Context, id uint) error {
+	return h.PersonUseCase.DeletePerson(ctx, id)
+}
 
 
 
+package main
 
-// Новый конструктор для создания обработчика с DeleteUseCase
-func NewHandler_D(deleteUC *usecase.DeletePersonUseCase) Handler {
-	return Handler{DeleteUC: deleteUC}
+import (
+	"context"
+	"fmt"
+	"log"
+	"people/internal/app/people"
+	"people/internal/app/people/adapters/adapterhttp/handlers"
+	"people/internal/app/people/repos"
+	"people/internal/app/people/usecase"
+	"people/internal/serv"
+	// другие импорты
+)
+
+func main() {
+	// Инициализация внешнего сервиса (например, для получения данных о человеке)
+	externalService := serv.NewExternalService()
+
+	// Инициализация репозитория (например, подключение к базе данных)
+	personRepo := repos.NewPersonRepository()
+
+	// Инициализация UseCase для создания
+	createPersonUseCase := usecase.NewCreatePersonUseCase(personRepo, externalService)
+
+	// Инициализация UseCase для удаления
+	deletePersonUseCase := usecase.NewDeletePersonUseCase(personRepo)
+
+	// Инициализация общего UseCase для создания и удаления
+	personUseCase := usecase.NewPersonUseCase(createPersonUseCase, deletePersonUseCase)
+
+	// Инициализация обработчика HTTP
+	handler := handlers.NewHandler(personUseCase)
+
+	// Пример использования: создание персоны
+	person := people.Person{
+		Name:      "John",
+		Surname:   "Doe",
+		Patronymic: "Middle",
+	}
+
+	// Создание персоны
+	createdPerson, err := handler.CreatePersonHandler(context.Background(), person)
+	if err != nil {
+		log.Fatalf("Error creating person: %v", err)
+	}
+	fmt.Printf("Created person: %+v\n", createdPerson)
+
+	// Пример использования: удаление персоны по ID
+	err = handler.DeletePersonHandler(context.Background(), createdPerson.ID)
+	if err != nil {
+		log.Fatalf("Error deleting person: %v", err)
+	}
+	fmt.Println("Person deleted successfully")
 }
 
 
