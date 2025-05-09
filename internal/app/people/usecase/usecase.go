@@ -62,3 +62,11 @@ func (uc *PersonUseCaseImpl) CreatePerson(ctx context.Context, req people.Person
 func (uc *PersonUseCaseImpl) DeletePerson(ctx context.Context, id int64) error {
 	return uc.DeletePersonUseCase.Execute(ctx, id)
 }
+
+func (uc *PersonUseCaseImpl) GetPersonByID(ctx context.Context, id int64) (people.Person, error) {
+	return uc.CreatePersonUseCase.Repo.GetByID(ctx, id)
+}
+
+func (uc *PersonUseCaseImpl) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
+	return uc.CreatePersonUseCase.Repo.Update(ctx, person)
+}

@@ -93,14 +93,14 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получаем тело запроса
-	var req CreatePersonRequest
+	// Декодируем тело запроса
+	var req PersonResponse
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Получаем текущего человека по ID
+	// Получаем текущего человека из БД
 	existing, err := h.uc.GetPersonByID(ctx, id)
 	if err != nil {
 		http.Error(w, "person not found", http.StatusNotFound)
@@ -110,24 +110,29 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	// Проверяем, изменилось ли имя
 	nameChanged := existing.Name != req.Name
 
-	// Обновляем поля
+	// Обновляем все поля
 	existing.Name = req.Name
 	existing.Surname = req.Surname
 	existing.Patronymic = req.Patronymic
+	existing.Age = req.Age
+	existing.Gender = req.Gender
+	existing.Nationality = req.Nationality
 
+	// Обогащаем данными, если имя изменилось
 	if nameChanged {
 		existing.Age = h.svc.GetAge(ctx, req.Name)
 		existing.Gender = h.svc.GetGender(ctx, req.Name)
 		existing.Nationality = h.svc.GetNationality(ctx, req.Name)
 	}
 
-	// Обновляем в базе через usecase
+	// Сохраняем обновления
 	updatedPerson, err := h.uc.UpdatePerson(ctx, existing)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// Отправляем ответ
 	resp := ToResponse(updatedPerson)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
