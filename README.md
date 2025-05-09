@@ -55,71 +55,94 @@ curl -X POST http://localhost:8080/people \
 
 
 
-func (es *ExternalServiceImpl) GetGender(ctx context.Context, name string) string {
-	url := fmt.Sprintf("%s?name=%s", es.GenderizeAPI, name)
+1. Интерфейс для создания и удаления персоны:
+Создадим интерфейс PersonUseCase в пакете usecase, который будет включать методы для создания и удаления персоны:
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return ""
-	}
+go
+Копировать
+Редактировать
+package usecase
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ""
-	}
-	defer resp.Body.Close()
+import (
+	"context"
+	"people/internal/app/people"
+)
 
-	var result struct {
-		Gender string `json:"gender"`
-	}
+// PersonUseCase интерфейс для работы с персоной
+type PersonUseCase interface {
+	// Создание новой персоны
+	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
+	// Удаление персоны по ID
+	DeletePerson(ctx context.Context, id int64) error
+}
+2. Реализация интерфейса в CreatePersonUseCase:
+go
+Копировать
+Редактировать
+package usecase
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return ""
-	}
+import (
+	"context"
+	"errors"
+	"people/internal/app/people"
+	"people/internal/app/people/repos"
+)
 
-	return result.Gender
+// CreatePersonUseCase структура для обработки создания и удаления человека
+type CreatePersonUseCase struct {
+	PersonRepository repos.PersonRepository
 }
 
-
-type ExternalService interface {
-	GetAge(ctx context.Context, name string) int
-	GetGender(ctx context.Context, name string) string
-	GetNationality(ctx context.Context, name string) string
+// NewCreatePersonUseCase конструктор для создания нового UseCase
+func NewCreatePersonUseCase(pr repos.PersonRepository) *CreatePersonUseCase {
+	return &CreatePersonUseCase{
+		PersonRepository: pr,
+	}
 }
 
+// CreatePerson создает новую персону
+func (uc *CreatePersonUseCase) CreatePerson(ctx context.Context, req people.Person) (people.Person, error) {
+	createdPerson, err := uc.PersonRepository.Create(ctx, req)
+	if err != nil {
+		return people.Person{}, err
+	}
+	return createdPerson, nil
+}
 
-age := uc.ExternalService.GetAge(ctx, person.Name)
-gender := uc.ExternalService.GetGender(ctx, person.Name)
-nation := uc.ExternalService.GetNationality(ctx, person.Name)
+// DeletePerson удаляет персону по ID
+func (uc *CreatePersonUseCase) DeletePerson(ctx context.Context, id int64) error {
+	person, err := uc.PersonRepository.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return uc.PersonRepository.Delete(ctx, person)
+}
+3. Интерфейс для работы с репозиторием:
+go
+Копировать
+Редактировать
+package repos
+
+import (
+	"context"
+	"people/internal/app/people"
+)
+
+// PersonRepository интерфейс для работы с репозиторием персоны
+type PersonRepository interface {
+	// Создание новой персоны
+	Create(ctx context.Context, person people.Person) (people.Person, error)
+	// Получение персоны по ID
+	GetByID(ctx context.Context, id int64) (people.Person, error)
+	// Удаление персоны по ID
+	Delete(ctx context.Context, person people.Person) error
+}
+Теперь интерфейс PersonUseCase включает только методы для создания и удаления персоны, как ты и просил.
 
 
-createdPerson, err := h.CreateUC.Execute(r.Context(), person)
 
 
-
-
-
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "InvalidIfaceAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "InvalidIfaceAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use extService (variable of type *serv.ExternalServiceImpl) as serv.ExternalService value in argument to usecase.NewCreatePersonUseCase: *serv.ExternalServiceImpl does not implement serv.ExternalService (wrong type for method GetAge)\n\t\thave GetAge(context.Context, string) int\n\t\twant GetAge(string) int",
-	"source": "compiler",
-	"startLineNumber": 41,
-	"startColumn": 51,
-	"endLineNumber": 41,
-	"endColumn": 61
-}]
 
 
 
