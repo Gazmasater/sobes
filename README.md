@@ -115,3 +115,27 @@ func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 
 
 
+func (r *GormPersonRepository) GetByID(ctx context.Context, id int64) (people.Person, error) {
+
+	var person people.Person
+
+	person.Age = 0
+	person.Gender = ""
+	person.ID = 0
+	person.Name = ""
+	person.Nationality = ""
+	person.Patronymic = ""
+	person.Surname = ""
+
+	fmt.Println("GetByID")
+
+	if err := r.db.WithContext(ctx).First(&person, id).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+
+}
+
+
+
+
