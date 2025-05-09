@@ -62,6 +62,23 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
 
 
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"people/internal/app/people"
+	"people/internal/app/people/adapters/adapterhttp"
+	"people/internal/app/people/repos"
+	"people/internal/app/people/usecase"
+	"people/pkg/logger"
+
+	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+)
+
 func main() {
 	ctx := logger.ToContext(context.Background(), logger.Global())
 
@@ -82,7 +99,6 @@ func main() {
 
 	// Создание зависимостей
 	repo := repos.NewPersonRepository(db)
-	extService := serv.NewExternalService()
 
 	// Create and Delete UseCases
 	createUC := usecase.NewCreatePersonUseCase(repo)
@@ -99,54 +115,6 @@ func main() {
 	log.Println("server started on :8080")
 	http.ListenAndServe(":8080", r)
 }
-
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "UnusedVar",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "UnusedVar"
-		}
-	},
-	"severity": 8,
-	"message": "declared and not used: extService",
-	"source": "compiler",
-	"startLineNumber": 41,
-	"startColumn": 2,
-	"endLineNumber": 41,
-	"endColumn": 12,
-	"tags": [
-		1
-	]
-}]
-
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "InvalidIfaceAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "InvalidIfaceAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use repo (variable of type *repos.GormPersonRepository) as repos.PersonRepository value in argument to usecase.NewCreatePersonUseCase: *repos.GormPersonRepository does not implement repos.PersonRepository (wrong type for method Delete)\n\t\thave Delete(context.Context, uint) error\n\t\twant Delete(context.Context, int64) error",
-	"source": "compiler",
-	"startLineNumber": 44,
-	"startColumn": 45,
-	"endLineNumber": 44,
-	"endColumn": 49
-}]
-
 
 
 
