@@ -65,59 +65,97 @@ curl -X POST http://localhost:8080/people \
 package adapterhttp
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
-
+	"people/internal/app/people"
 	"people/internal/app/people/usecase"
+	"strconv"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi"
 )
 
-type HTTPHandler interface {
+type HTTPHandler_interf interface {
 	RegisterRoutes(r chi.Router)
 }
 
-type handler struct {
+type HTTPHandler struct {
 	uc usecase.PersonUseCase
 }
 
-func NewHandler(uc usecase.PersonUseCase) HTTPHandler {
-	return &handler{uc: uc}
+func NewHandler(uc usecase.PersonUseCase) HTTPHandler_interf {
+	return &HTTPHandler{uc: uc}
 }
 
-func (h *handler) RegisterRoutes(r chi.Router) {
-	r.Post("/person", h.CreatePerson)
-	r.Delete("/person/{id}", h.DeletePerson)
+func (h HTTPHandler) CreatePerson(w http.ResponseWriter, r *http.Request) {
+	var req CreatePersonRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	person := people.Person{
+		Name:       req.Name,
+		Surname:    req.Surname,
+		Patronymic: req.Patronymic,
+	}
+
+	fmt.Printf("PERSON NAme=%s Surname=%s\n", person.Name, person.Surname)
+
+	createdPerson, err := h.uc.CreatePerson(r.Context(), person)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := ToResponse(createdPerson)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }
 
-func (h *handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
-	// Обработка создания
+func (h HTTPHandler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	// Извлекаем ID из URL
+
+	idStr := r.URL.Path[len("/people/"):]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Deleting person with ID: %d\n", id)
+
+	// Вызываем UseCase для удаления
+	err = h.uc.DeletePerson(r.Context(), int64(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	// Обработка удаления
-}
 
-
-
-package adapterhttp
-
-import (
-	"github.com/go-chi/chi/v5"
-	"net/http"
-)
-
-func SetupRoutes(h HTTPHandler) http.Handler {
-	r := chi.NewRouter()
-	h.RegisterRoutes(r)
-	return r
-}
-
-
-
-// ...
-handler := adapterhttp.NewHandler(personUC) // <- возвращается интерфейс HTTPHandler
-r := adapterhttp.SetupRoutes(handler)
-
-log.Println("server started on :8080")
-http.ListenAndServe(":8080", r)
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/adapters/adapterhttp/handlers.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "InvalidIfaceAssign",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "InvalidIfaceAssign"
+		}
+	},
+	"severity": 8,
+	"message": "cannot use &HTTPHandler{…} (value of type *HTTPHandler) as HTTPHandler_interf value in return statement: *HTTPHandler does not implement HTTPHandler_interf (missing method RegisterRoutes)",
+	"source": "compiler",
+	"startLineNumber": 23,
+	"startColumn": 9,
+	"endLineNumber": 23,
+	"endColumn": 29
+}]
 
