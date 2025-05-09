@@ -77,4 +77,31 @@ func (es *ExternalServiceImpl) GetNationality(ctx context.Context, name string) 
 }
 
 
+func (es *ExternalServiceImpl) GetAge(ctx context.Context, name string) int {
+	url := fmt.Sprintf("%s?name=%s", es.AgifyAPI, name)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return 0
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Age int `json:"age"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return 0
+	}
+
+	return result.Age
+}
+
+
+
 
