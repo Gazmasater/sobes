@@ -100,6 +100,53 @@ func main() {
 	http.ListenAndServe(":8080", r)
 }
 
+[{
+	"resource": "/home/gaz358/myprog/sobes/main.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "UnusedVar",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "UnusedVar"
+		}
+	},
+	"severity": 8,
+	"message": "declared and not used: extService",
+	"source": "compiler",
+	"startLineNumber": 41,
+	"startColumn": 2,
+	"endLineNumber": 41,
+	"endColumn": 12,
+	"tags": [
+		1
+	]
+}]
+
+[{
+	"resource": "/home/gaz358/myprog/sobes/main.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "InvalidIfaceAssign",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "InvalidIfaceAssign"
+		}
+	},
+	"severity": 8,
+	"message": "cannot use repo (variable of type *repos.GormPersonRepository) as repos.PersonRepository value in argument to usecase.NewCreatePersonUseCase: *repos.GormPersonRepository does not implement repos.PersonRepository (wrong type for method Delete)\n\t\thave Delete(context.Context, uint) error\n\t\twant Delete(context.Context, int64) error",
+	"source": "compiler",
+	"startLineNumber": 44,
+	"startColumn": 45,
+	"endLineNumber": 44,
+	"endColumn": 49
+}]
+
 
 
 
