@@ -73,18 +73,8 @@ type PersonUseCase interface {
 	// Создание новой персоны
 	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
 	// Удаление персоны по ID
-	DeletePerson(ctx context.Context, id uint) error
+	DeletePerson(ctx context.Context, id int64) error
 }
-
-
-package usecase
-
-import (
-	"context"
-	"people/internal/app/people"
-	"people/internal/app/people/repos"
-	"people/internal/serv"
-)
 
 type PersonUseCase struct {
 	CreatePersonUseCase *CreatePersonUseCase
@@ -101,7 +91,6 @@ func NewPersonUseCase(
 	}
 }
 
-// Реализация методов интерфейса для создания и удаления
 func (uc *PersonUseCase) CreatePerson(ctx context.Context, req people.Person) (people.Person, error) {
 	return uc.CreatePersonUseCase.Execute(ctx, req)
 }
@@ -111,91 +100,68 @@ func (uc *PersonUseCase) DeletePerson(ctx context.Context, id uint) error {
 }
 
 
-package handlers
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "DuplicateDecl",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "DuplicateDecl"
+		}
+	},
+	"severity": 8,
+	"message": "PersonUseCase redeclared in this block (see details)",
+	"source": "compiler",
+	"startLineNumber": 8,
+	"startColumn": 6,
+	"endLineNumber": 8,
+	"endColumn": 19,
+	"relatedInformation": [
+		{
+			"startLineNumber": 15,
+			"startColumn": 6,
+			"endLineNumber": 15,
+			"endColumn": 19,
+			"message": "",
+			"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go"
+		}
+	]
+}]
 
-import (
-	"context"
-	"fmt"
-	"people/internal/app/people"
-	"people/internal/app/people/usecase"
-)
-
-type Handler struct {
-	PersonUseCase usecase.PersonUseCase
-}
-
-func NewHandler(personUseCase usecase.PersonUseCase) *Handler {
-	return &Handler{
-		PersonUseCase: personUseCase,
-	}
-}
-
-// Обработчик для создания
-func (h *Handler) CreatePersonHandler(ctx context.Context, person people.Person) (people.Person, error) {
-	return h.PersonUseCase.CreatePerson(ctx, person)
-}
-
-// Обработчик для удаления
-func (h *Handler) DeletePersonHandler(ctx context.Context, id uint) error {
-	return h.PersonUseCase.DeletePerson(ctx, id)
-}
-
-
-
-package main
-
-import (
-	"context"
-	"fmt"
-	"log"
-	"people/internal/app/people"
-	"people/internal/app/people/adapters/adapterhttp/handlers"
-	"people/internal/app/people/repos"
-	"people/internal/app/people/usecase"
-	"people/internal/serv"
-	// другие импорты
-)
-
-func main() {
-	// Инициализация внешнего сервиса (например, для получения данных о человеке)
-	externalService := serv.NewExternalService()
-
-	// Инициализация репозитория (например, подключение к базе данных)
-	personRepo := repos.NewPersonRepository()
-
-	// Инициализация UseCase для создания
-	createPersonUseCase := usecase.NewCreatePersonUseCase(personRepo, externalService)
-
-	// Инициализация UseCase для удаления
-	deletePersonUseCase := usecase.NewDeletePersonUseCase(personRepo)
-
-	// Инициализация общего UseCase для создания и удаления
-	personUseCase := usecase.NewPersonUseCase(createPersonUseCase, deletePersonUseCase)
-
-	// Инициализация обработчика HTTP
-	handler := handlers.NewHandler(personUseCase)
-
-	// Пример использования: создание персоны
-	person := people.Person{
-		Name:      "John",
-		Surname:   "Doe",
-		Patronymic: "Middle",
-	}
-
-	// Создание персоны
-	createdPerson, err := handler.CreatePersonHandler(context.Background(), person)
-	if err != nil {
-		log.Fatalf("Error creating person: %v", err)
-	}
-	fmt.Printf("Created person: %+v\n", createdPerson)
-
-	// Пример использования: удаление персоны по ID
-	err = handler.DeletePersonHandler(context.Background(), createdPerson.ID)
-	if err != nil {
-		log.Fatalf("Error deleting person: %v", err)
-	}
-	fmt.Println("Person deleted successfully")
-}
-
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "DuplicateDecl",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "DuplicateDecl"
+		}
+	},
+	"severity": 8,
+	"message": "PersonUseCase redeclared in this block",
+	"source": "compiler",
+	"startLineNumber": 15,
+	"startColumn": 6,
+	"endLineNumber": 15,
+	"endColumn": 19,
+	"relatedInformation": [
+		{
+			"startLineNumber": 8,
+			"startColumn": 6,
+			"endLineNumber": 8,
+			"endColumn": 19,
+			"message": "other declaration of PersonUseCase",
+			"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go"
+		}
+	]
+}]
 
 
