@@ -62,22 +62,62 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
   
 
+package adapterhttp
+
+import (
+	"net/http"
+
+	"people/internal/app/people/usecase"
+
+	"github.com/go-chi/chi/v5"
+)
+
 type HTTPHandler interface {
-	RegisterRoutes(r *mux.Router)
+	RegisterRoutes(r chi.Router)
 }
 
 type handler struct {
 	uc usecase.PersonUseCase
 }
 
-func (h *handler) RegisterRoutes(r *mux.Router) {
-	// Регистрация маршрутов
-}
-
 func NewHandler(uc usecase.PersonUseCase) HTTPHandler {
 	return &handler{uc: uc}
 }
 
-handler := adapterhttp.NewHandler(personUC) // handler имеет тип adapterhttp.HTTPHandler
+func (h *handler) RegisterRoutes(r chi.Router) {
+	r.Post("/person", h.CreatePerson)
+	r.Delete("/person/{id}", h.DeletePerson)
+}
+
+func (h *handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
+	// Обработка создания
+}
+
+func (h *handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	// Обработка удаления
+}
+
+
+
+package adapterhttp
+
+import (
+	"github.com/go-chi/chi/v5"
+	"net/http"
+)
+
+func SetupRoutes(h HTTPHandler) http.Handler {
+	r := chi.NewRouter()
+	h.RegisterRoutes(r)
+	return r
+}
+
+
+
+// ...
+handler := adapterhttp.NewHandler(personUC) // <- возвращается интерфейс HTTPHandler
 r := adapterhttp.SetupRoutes(handler)
+
+log.Println("server started on :8080")
+http.ListenAndServe(":8080", r)
 
