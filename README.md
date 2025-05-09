@@ -62,47 +62,16 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
   
 
-func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
-	fmt.Println("Create")
-
-	var existing people.Person
-	err := r.db.WithContext(ctx).Where("name = ? AND surname = ? AND patronymic = ?", person.Name, person.Surname, person.Patronymic).First(&existing).Error
-	if err == nil {
-		// Такой человек уже есть
-		return people.Person{}, fmt.Errorf("person already exists")
-	}
-	if err != nil && err != gorm.ErrRecordNotFound {
+if err != nil {
+	if err != gorm.ErrRecordNotFound {
 		return people.Person{}, err
 	}
-
-	// Добавляем, если не найден
-	if err := r.db.Create(&person).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
+} else {
+	// Такой человек уже есть
+	return people.Person{}, fmt.Errorf("person already exists")
 }
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/repos/person_gorm.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "cond",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/go/analysis/passes/nilness",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "cond"
-		}
-	},
-	"severity": 4,
-	"message": "tautological condition: non-nil != nil",
-	"source": "nilness",
-	"startLineNumber": 31,
-	"startColumn": 10,
-	"endLineNumber": 31,
-	"endColumn": 10
-}]
+
 
 
 
