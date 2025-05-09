@@ -63,65 +63,17 @@ curl -X POST http://localhost:8080/people \
   
 
 
-func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	// Получаем ID из URL
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
-		return
-	}
-
-	// Получаем тело запроса
-	var req CreatePersonRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	// Получаем текущего человека по ID
-	existing, err := h.uc.GetPersonByID(ctx, id)
-	if err != nil {
-		http.Error(w, "person not found", http.StatusNotFound)
-		return
-	}
-
-	// Проверяем, изменилось ли имя
-	nameChanged := existing.Name != req.Name
-
-	// Обновляем поля
-	existing.Name = req.Name
-	existing.Surname = req.Surname
-	existing.Patronymic = req.Patronymic
-
-	if nameChanged {
-		existing.Age = h.svc.GetAge(ctx, req.Name)
-		existing.Gender = h.svc.GetGender(ctx, req.Name)
-		existing.Nationality = h.svc.GetNationality(ctx, req.Name)
-	}
-
-	// Обновляем в базе через usecase
-	updatedPerson, err := h.uc.UpdatePerson(ctx, existing)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	resp := ToResponse(updatedPerson)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
-}
 
 type PersonUseCase interface {
 	// Создание новой персоны
 	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
+	
 	// Удаление персоны по ID
 	DeletePerson(ctx context.Context, id int64) error
-	
 
+	// Получение персоны по ID
+	GetPersonByID(ctx context.Context, id int64) (people.Person, error)
+
+	// Обновление персоны
+	UpdatePerson(ctx context.Context, person people.Person) (people.Person, error)
 }
-
-
-
