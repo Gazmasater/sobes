@@ -67,17 +67,27 @@ deleteUC := usecase.NewDeletePersonUseCase(repo)
 personUC := usecase.NewPersonUseCase(createUC, deleteUC)
 
 
-package repos
-
-import (
-	"context"
-	"people/internal/app/people"
-)
-
-type Repository interface {
-	Create(ctx context.Context, p people.Person) (people.Person, error)
-	Delete(ctx context.Context, id int64) error
-}
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "UndeclaredImportedName",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "UndeclaredImportedName"
+		}
+	},
+	"severity": 8,
+	"message": "undefined: people.Repository",
+	"source": "compiler",
+	"startLineNumber": 13,
+	"startColumn": 41,
+	"endLineNumber": 13,
+	"endColumn": 51
+}]
 
 
 
