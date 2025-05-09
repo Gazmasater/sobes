@@ -62,63 +62,49 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
   
 
-✅ 1. Добавь поля в people.Person
-В структуре Person (предположительно internal/app/people/person.go) добавь:
+package repos
 
+import (
+	"context"
+	"fmt"
+	"people/internal/app/people"
 
-Age         int
-Gender      string
-Nationality string
-✅ 2. Подключи serv.ExternalService в handler
-Добавь svc serv.ExternalService в структуру HTTPHandler:
+	"gorm.io/gorm"
+)
 
-
-type HTTPHandler struct {
-	uc  usecase.PersonUseCase
-	svc serv.ExternalService
+// GormPersonRepository реализация PersonRepository через GORM
+type GormPersonRepository struct {
+	db *gorm.DB
 }
-✅ 3. Обнови NewHandler
 
-func NewHandler(uc usecase.PersonUseCase, svc serv.ExternalService) HTTPHandler_interf {
-	return &HTTPHandler{uc: uc, svc: svc}
+// NewPersonRepository создаёт новый GormPersonRepository
+func NewPersonRepository(db *gorm.DB) *GormPersonRepository {
+	return &GormPersonRepository{db: db}
 }
-✅ 4. Обнови CreatePerson handler
 
-func (h HTTPHandler) CreatePerson(w http.ResponseWriter, r *http.Request) {
-	var req CreatePersonRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
+// Create сохраняет нового человека в базу данных
+func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
+
+	fmt.Println("Create")
+	if err := r.db.Create(&person).Error; err != nil {
+		return people.Person{}, err
 	}
-
-	// Получаем доп. данные
-	ctx := r.Context()
-	age := h.svc.GetAge(ctx, req.Name)
-	gender := h.svc.GetGender(ctx, req.Name)
-	nationality := h.svc.GetNationality(ctx, req.Name)
-
-	person := people.Person{
-		Name:        req.Name,
-		Surname:     req.Surname,
-		Patronymic:  req.Patronymic,
-		Age:         age,
-		Gender:      gender,
-		Nationality: nationality,
-	}
-
-	createdPerson, err := h.uc.CreatePerson(ctx, person)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	resp := ToResponse(createdPerson)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	return person, nil
 }
-✅ 5. Обнови конструктор main.go
 
-svc := serv.NewExternalService()
-handler := adapterhttp.NewHandler(personUC, svc)
+func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
+
+	fmt.Println("Delete")
+
+	if err := r.db.Delete(&people.Person{}, id).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+
+
+
+
 
 
