@@ -59,12 +59,43 @@ curl -X POST http://localhost:8080/people \
 	createUC := usecase.NewCreatePersonUseCase(repo, extService)
 
 
-func (uc *CreatePersonUseCase) DeletePerson(ctx context.Context, id int64) error {
-	person, err := uc.PersonRepository.GetByID(ctx, id)
-	if err != nil {
-		return err
+func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	idStr := chi.URLParam(r, "id")
+	logger.Debug(ctx, "Delete request received", "id", idStr)
+
+	// Проверка на пустой ID в URL
+	if idStr == "" {
+		logger.Warn(ctx, "No ID provided in URL")
+		http.Error(w, `{"error":"missing ID"}`, http.StatusBadRequest)
+		return
 	}
 
-	return uc.PersonRepository.Delete(ctx, person)
+	// Преобразование строки ID в целое число
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		logger.Warn(ctx, "Invalid ID format", "id", idStr, "err", err)
+		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Проверка существования персоны в базе данных
+	var p Person
+	if err := h.DB.First(&p, id).Error; err != nil {
+		logger.Warn(ctx, "Person not found", "id", id, "err", err)
+		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// Удаление персоны из базы данных
+	if err := h.DB.Delete(&p).Error; err != nil {
+		logger.Error(ctx, "Failed to delete person", "id", id, "err", err)
+		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Успешное удаление
+	logger.Info(ctx, "Person deleted", "id", id)
+	w.WriteHeader(http.StatusNoContent)
 }
 
