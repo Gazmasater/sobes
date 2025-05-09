@@ -56,7 +56,9 @@ curl -X POST http://localhost:8080/people \
   }'
 
 
-_, err = h.PersonRepo.GetByID(ctx, id)
+fmt.Printf("DeletePerson ID=%d\n", id)
+
+	_, err = h.PersonRepo.GetByID(ctx, id)
 	if err != nil {
 		logger.Warn(ctx, "Person not found", "id", id, "err", err)
 		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
