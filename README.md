@@ -62,69 +62,119 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
 
 
-func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
-    // Ищем объект по ID перед удалением
-    var person people.Person
-    if err := r.db.WithContext(ctx).First(&person, id).Error; err != nil {
-        // Если объект не найден, возвращаем ошибку
-        fmt.Println("Error finding person:", err)
-        return fmt.Errorf("person not found: %v", err)
-    }
+package repos
 
-    // Печатаем объект, чтобы удостовериться, что он корректно найден
-    fmt.Printf("Person found: %+v\n", person)
+import (
+	"context"
+	"people/internal/app/people"
+)
 
-    // Удаление персоны
-    if err := r.db.WithContext(ctx).Delete(&person).Error; err != nil {
-        fmt.Println("Error deleting person:", err)
-        return fmt.Errorf("failed to delete person: %v", err)
-    }
-
-    fmt.Println("Person deleted successfully with ID:", id)
-    return nil
+type PersonRepository interface {
+	Create(ctx context.Context, person people.Person) (people.Person, error)
+	Delete(ctx context.Context, id uint) error // Новый метод для удаления
 }
 
 
+package repos
 
-func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-    ctx := r.Context()
-    idStr := chi.URLParam(r, "id")
-    logger.Debug(ctx, "Delete request received", "id", idStr)
+import (
+	"context"
+	"people/internal/app/people"
 
-    if idStr == "" {
-        logger.Warn(ctx, "No ID provided in URL")
-        http.Error(w, `{"error":"missing ID"}`, http.StatusBadRequest)
-        return
-    }
+	"gorm.io/gorm"
+)
 
-    id, err := strconv.ParseInt(idStr, 10, 64)
-    if err != nil {
-        logger.Warn(ctx, "Invalid ID format", "id", idStr, "err", err)
-        http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
-        return
-    }
-
-    fmt.Printf("DeletePerson ID=%d\n", id)
-
-    // Проверяем существование персоны перед удалением
-    _, err = h.PersonRepo.GetByID(ctx, id)
-    if err != nil {
-        logger.Warn(ctx, "Person not found", "id", id, "err", err)
-        http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
-        return
-    }
-
-    // Удаляем персону
-    if err := h.PersonRepo.Delete(ctx, id); err != nil {
-        logger.Error(ctx, "Failed to delete person", "id", id, "err", err)
-        http.Error(w, fmt.Sprintf(`{"error":"delete failed: %v"}`, err), http.StatusInternalServerError)
-        return
-    }
-
-    logger.Info(ctx, "Person deleted", "id", id)
-    w.WriteHeader(http.StatusNoContent)
+// GormPersonRepository реализация PersonRepository через GORM
+type GormPersonRepository struct {
+	db *gorm.DB
 }
 
+// NewPersonRepository создаёт новый GormPersonRepository
+func NewPersonRepository(db *gorm.DB) *GormPersonRepository {
+	return &GormPersonRepository{db: db}
+}
+
+// Create сохраняет нового человека в базу данных
+func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
+	if err := r.db.Create(&person).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+}
+
+// Delete удаляет человека по ID
+func (r *GormPersonRepository) Delete(ctx context.Context, id uint) error {
+	if err := r.db.Delete(&people.Person{}, id).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+
+package adapterhttp
+
+import (
+	"fmt"
+	"net/http"
+	"strconv"
+
+	"people/internal/app/people/usecase"
+)
+
+type Handler struct {
+	CreateUC   *usecase.CreatePersonUseCase
+	DeleteUC   *usecase.DeletePersonUseCase // Добавляем новый UseCase для удаления
+}
+
+func NewHandler(createUC *usecase.CreatePersonUseCase, deleteUC *usecase.DeletePersonUseCase) Handler {
+	return Handler{CreateUC: createUC, DeleteUC: deleteUC}
+}
+
+func (h Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
+	// Обработчик для создания человека
+}
+
+func (h Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	// Извлекаем ID из URL
+	idStr := r.URL.Path[len("/persons/"):]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Deleting person with ID: %d\n", id)
+
+	// Вызываем UseCase для удаления
+	err = h.DeleteUC.Execute(r.Context(), uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+
+package usecase
+
+import (
+	"context"
+	"people/internal/app/people"
+	"people/internal/app/people/repos"
+)
+
+type DeletePersonUseCase struct {
+	Repo repos.PersonRepository
+}
+
+func NewDeletePersonUseCase(repo repos.PersonRepository) *DeletePersonUseCase {
+	return &DeletePersonUseCase{Repo: repo}
+}
+
+func (uc *DeletePersonUseCase) Execute(ctx context.Context, id uint) error {
+	return uc.Repo.Delete(ctx, id)
+}
 
 
 
