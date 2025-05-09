@@ -59,99 +59,34 @@ curl -X POST http://localhost:8080/people \
 	createUC := usecase.NewCreatePersonUseCase(repo, extService)
 
 
-package repos
-
-import (
-	"context"
-	"people/internal/app/people"
-)
-
-type PersonRepository interface {
-	Create(ctx context.Context, person people.Person) (people.Person, error)
-	Delete(ctx context.Context, id int64) error
-	FindByID(ctx context.Context, id int64) (people.Person, error)
-}
-
-
-package repos
-
-import (
-	"context"
-	"people/internal/app/people"
-
-	"gorm.io/gorm"
-)
-
-type GormPersonRepository struct {
-	DB *gorm.DB
-}
-
-func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
-	if err := r.DB.WithContext(ctx).Create(&person).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-}
-
-func (r *GormPersonRepository) FindByID(ctx context.Context, id int64) (people.Person, error) {
-	var person people.Person
-	if err := r.DB.WithContext(ctx).First(&person, id).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-}
-
-func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
-	if err := r.DB.WithContext(ctx).Delete(&people.Person{}, id).Error; err != nil {
+func (uc *CreatePersonUseCase) DeletePerson(ctx context.Context, id int64) error {
+	person, err := uc.PersonRepository.GetByID(ctx, id)
+	if err != nil {
 		return err
 	}
-	return nil
+
+	return uc.PersonRepository.Delete(ctx, person)
 }
 
-
-
-package adapterhttp
-
-import (
-	"net/http"
-	"strconv"
-
-	"github.com/go-chi/chi/v5"
-	"people/internal/app/people/logger"
-)
-
-func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	idStr := chi.URLParam(r, "id")
-	logger.Debug(ctx, "Delete request received", "id", idStr)
-
-	if idStr == "" {
-		logger.Warn(ctx, "No ID provided in URL")
-		http.Error(w, `{"error":"missing ID"}`, http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		logger.Warn(ctx, "Invalid ID format", "id", idStr, "err", err)
-		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
-		return
-	}
-
-	_, err = h.PersonRepo.FindByID(ctx, id)
-	if err != nil {
-		logger.Warn(ctx, "Person not found", "id", id, "err", err)
-		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
-		return
-	}
-
-	if err := h.PersonRepo.Delete(ctx, id); err != nil {
-		logger.Error(ctx, "Failed to delete person", "id", id, "err", err)
-		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
-		return
-	}
-
-	logger.Info(ctx, "Person deleted", "id", id)
-	w.WriteHeader(http.StatusNoContent)
-}
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "IncompatibleAssign",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "IncompatibleAssign"
+		}
+	},
+	"severity": 8,
+	"message": "cannot use person (variable of struct type people.Person) as int64 value in argument to uc.PersonRepository.Delete",
+	"source": "compiler",
+	"startLineNumber": 63,
+	"startColumn": 41,
+	"endLineNumber": 63,
+	"endColumn": 47
+}]
 
