@@ -141,6 +141,29 @@ type PersonRepository interface {
 Теперь интерфейс PersonUseCase включает только методы для создания и удаления персоны, как ты и просил.
 
 
+[{
+	"resource": "/home/gaz358/myprog/sobes/main.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "InvalidIfaceAssign",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "InvalidIfaceAssign"
+		}
+	},
+	"severity": 8,
+	"message": "cannot use repo (variable of type *repos.GormPersonRepository) as repos.PersonRepository value in argument to usecase.NewCreatePersonUseCase: *repos.GormPersonRepository does not implement repos.PersonRepository (wrong type for method Create)\n\t\thave Create(people.Person) (people.Person, error)\n\t\twant Create(context.Context, people.Person) (people.Person, error)",
+	"source": "compiler",
+	"startLineNumber": 41,
+	"startColumn": 45,
+	"endLineNumber": 41,
+	"endColumn": 49
+}]
+
+
 
 
 
