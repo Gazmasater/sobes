@@ -28,6 +28,19 @@ internal/
 curl -X DELETE "http://localhost:8080/people/1"
 
 
+curl -X PUT http://localhost:8080/people/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Иван",
+    "surname": "Иванов",
+    "patronymic": "Иванович",
+    "age": 35,
+    "gender": "male",
+    "nationality": "russian"
+  }'
+
+
+
 
 
 
