@@ -45,96 +45,35 @@ git rm --cached textDB
 
 
 
-package adapterhttp
+func (es *ExternalServiceImpl) GetNationality(ctx context.Context, name string) string {
+	url := fmt.Sprintf("%s?name=%s", es.NationalizeAPI, name)
 
-import (
-	"people/internal/app/usecase"
-)
-
-type Handler struct {
-	CreateUC *usecase.CreatePersonUseCase
-	// Здесь позже можно добавить другие usecase, если нужно
-}
-
-func NewHandler(createUC *usecase.CreatePersonUseCase) Handler {
-	return Handler{CreateUC: createUC}
-}
-package adapterhttp
-
-import (
-	"encoding/json"
-	"net/http"
-	"people/internal/app/people"
-)
-
-func (h Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
-	var req CreatePersonRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	person := people.Person{
-		Name:       req.Name,
-		Surname:    req.Surname,
-		Patronymic: req.Patronymic,
-	}
-
-	createdPerson, err := h.CreateUC.Execute(r.Context(), person)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return ""
 	}
 
-	resp := ToResponse(createdPerson)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
-}
-
-
-func (h Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("GetPeople not implemented yet"))
-}
-
-func (h Handler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("UpdatePerson not implemented yet"))
-}
-
-func (h Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("DeletePerson not implemented yet"))
-}
-
-
-package main
-
-import (
-	"log"
-	"net/http"
-	"people/internal/app/repository"
-	"people/internal/app/services"
-	"people/internal/app/usecase"
-	"people/internal/adapterhttp"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-)
-
-func main() {
-	dsn := "host=localhost user=postgres password=qwert dbname=people port=5432 sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatal("failed to connect to DB:", err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	var result struct {
+		Country []struct {
+			CountryID string `json:"country_id"`
+		} `json:"country"`
 	}
 
-	db.AutoMigrate(&people.Person{})
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return ""
+	}
 
-	repo := repository.NewPersonRepository(db)
-	extService := services.NewExternalService() // реализуй этот сервис
-	createUC := usecase.NewCreatePersonUseCase(repo, extService)
-	handler := adapterhttp.NewHandler(createUC)
+	if len(result.Country) > 0 {
+		return result.Country[0].CountryID
+	}
 
-	r := adapterhttp.SetupRoutes(handler)
-	log.Println("server started on :8080")
-	http.ListenAndServe(":8080", r)
+	return ""
 }
 
 
