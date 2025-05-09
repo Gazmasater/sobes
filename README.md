@@ -44,6 +44,16 @@ swag init
 git rm --cached textDB
 
 
+curl -X POST http://localhost:8080/people \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Иван",
+    "surname": "Иванов",
+    "patronymic": "Иванович"
+  }'
+
+
+
 
 func (es *ExternalServiceImpl) GetGender(ctx context.Context, name string) string {
 	url := fmt.Sprintf("%s?name=%s", es.GenderizeAPI, name)
