@@ -62,24 +62,22 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
   
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "IncompatibleAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "IncompatibleAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use handler (variable of type *adapterhttp.HTTPHandler) as adapterhttp.HTTPHandler value in argument to adapterhttp.SetupRoutes",
-	"source": "compiler",
-	"startLineNumber": 52,
-	"startColumn": 31,
-	"endLineNumber": 52,
-	"endColumn": 38
-}]
+type HTTPHandler interface {
+	RegisterRoutes(r *mux.Router)
+}
+
+type handler struct {
+	uc usecase.PersonUseCase
+}
+
+func (h *handler) RegisterRoutes(r *mux.Router) {
+	// Регистрация маршрутов
+}
+
+func NewHandler(uc usecase.PersonUseCase) HTTPHandler {
+	return &handler{uc: uc}
+}
+
+handler := adapterhttp.NewHandler(personUC) // handler имеет тип adapterhttp.HTTPHandler
+r := adapterhttp.SetupRoutes(handler)
+
