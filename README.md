@@ -71,6 +71,24 @@ func (es *ExternalServiceImpl) GetGender(ctx context.Context, name string) strin
 }
 
 
+type ExternalService interface {
+	GetAge(ctx context.Context, name string) int
+	GetGender(ctx context.Context, name string) string
+	GetNationality(ctx context.Context, name string) string
+}
+
+
+age := uc.ExternalService.GetAge(ctx, person.Name)
+gender := uc.ExternalService.GetGender(ctx, person.Name)
+nation := uc.ExternalService.GetNationality(ctx, person.Name)
+
+
+createdPerson, err := h.CreateUC.Execute(r.Context(), person)
+
+
+
+
+
 [{
 	"resource": "/home/gaz358/myprog/sobes/main.go",
 	"owner": "_generated_diagnostic_collection_name_#0",
