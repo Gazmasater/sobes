@@ -20,48 +20,10 @@ func NewPersonRepository(db *gorm.DB) *GormPersonRepository {
 
 // Create сохраняет нового человека в базу данных
 func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
+
+	fmt.Println("Create")
 	if err := r.db.Create(&person).Error; err != nil {
 		return people.Person{}, err
 	}
 	return person, nil
-}
-
-func (r *GormPersonRepository) FindByID(ctx context.Context, id int64) (people.Person, error) {
-	var person people.Person
-	if err := r.db.WithContext(ctx).First(&person, id).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-}
-
-// Delete удаляет персону из базы данных
-func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
-
-	fmt.Println("Delete")
-
-	if err := r.db.WithContext(ctx).Delete(&people.Person{}, id).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *GormPersonRepository) GetByID(ctx context.Context, id int64) (people.Person, error) {
-
-	var person people.Person
-
-	person.Age = 0
-	person.Gender = ""
-	person.ID = 0
-	person.Name = ""
-	person.Nationality = ""
-	person.Patronymic = ""
-	person.Surname = ""
-
-	fmt.Println("GetByID")
-
-	if err := r.db.WithContext(ctx).First(&person, id).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-
 }

@@ -58,12 +58,3 @@ func (uc *CreatePersonUseCase) Execute(ctx context.Context, req people.Person) (
 
 	return createdPerson, nil
 }
-
-func (uc *CreatePersonUseCase) DeletePerson(ctx context.Context, id int64) error {
-	_, err := uc.PersonRepository.GetByID(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	return uc.PersonRepository.Delete(ctx, id)
-}
