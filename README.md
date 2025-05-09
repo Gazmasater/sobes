@@ -184,3 +184,40 @@ handler := adapterhttp.NewHandler(createUC, deleteUC)
 
 
 
+type Handler struct {
+	CreateUC *usecase.CreatePersonUseCase
+	DeleteUC *usecase.DeletePersonUseCase // Добавляем новый UseCase для удаления
+}
+
+func NewHandler_C(createUC *usecase.CreatePersonUseCase) Handler {
+	return Handler{CreateUC: createUC}
+}
+
+func NewHandler_D(deleteUC *usecase.CreatePersonUseCase) Handler {
+	return Handler{DeleteUC: deleteUC}
+}
+
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/adapters/adapterhttp/handlers.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "IncompatibleAssign",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "IncompatibleAssign"
+		}
+	},
+	"severity": 8,
+	"message": "cannot use deleteUC (variable of type *usecase.CreatePersonUseCase) as *usecase.DeletePersonUseCase value in struct literal",
+	"source": "compiler",
+	"startLineNumber": 22,
+	"startColumn": 27,
+	"endLineNumber": 22,
+	"endColumn": 35
+}]
+
+
+
