@@ -62,30 +62,19 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
   
 
-func (h *HTTPHandler) RegisterRoutes(r chi.Router) {
-	r.Post("/people", h.CreatePerson)
-	r.Delete("/people/{id}", h.DeletePerson)
+func main() {
+	// ...
+	r := chi.NewRouter()
+
+	personUC := usecase.NewPersonUseCase(...) // твоя реализация
+	handler := adapterhttp.NewHandler(personUC)
+
+	// Зарегистрируй маршруты
+	handler.RegisterRoutes(r)
+
+	// Запускай HTTP сервер с роутером
+	http.ListenAndServe(":8080", r)
 }
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "InvalidIfaceAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "InvalidIfaceAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use r (variable of interface type adapterhttp.HTTPHandler_interf) as http.Handler value in argument to http.ListenAndServe: adapterhttp.HTTPHandler_interf does not implement http.Handler (missing method ServeHTTP)",
-	"source": "compiler",
-	"startLineNumber": 54,
-	"startColumn": 31,
-	"endLineNumber": 54,
-	"endColumn": 32
-}]
+
 
