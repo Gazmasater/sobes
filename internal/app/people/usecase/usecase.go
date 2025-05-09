@@ -58,3 +58,19 @@ func (uc *CreatePersonUseCase) Execute(ctx context.Context, req people.Person) (
 
 	return createdPerson, nil
 }
+
+type DeletePersonUseCase struct {
+	Repo repos.PersonRepository
+}
+
+func NewDeletePersonUseCase(repo repos.PersonRepository) *DeletePersonUseCase {
+	return &DeletePersonUseCase{Repo: repo}
+}
+
+func (uc *DeletePersonUseCase) Execute(ctx context.Context, id uint) error {
+
+	fmt.Println("DeletePersonUseCase Execute")
+	fmt.Printf("id=%d\n", id)
+
+	return uc.Repo.Delete(ctx, id)
+}

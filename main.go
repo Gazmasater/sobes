@@ -39,7 +39,9 @@ func main() {
 	repo := repos.NewPersonRepository(db)
 	extService := serv.NewExternalService()
 	createUC := usecase.NewCreatePersonUseCase(repo, extService)
-	handler := adapterhttp.NewHandler(createUC)
+
+	deleteUC := usecase.NewDeletePersonUseCase(personRepo)
+	handler := adapterhttp.Handler(createUC, deleteUC)
 
 	r := adapterhttp.SetupRoutes(handler)
 	log.Println("server started on :8080")

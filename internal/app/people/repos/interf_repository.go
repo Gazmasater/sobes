@@ -7,4 +7,6 @@ import (
 
 type PersonRepository interface {
 	Create(ctx context.Context, person people.Person) (people.Person, error)
+	Delete(ctx context.Context, id uint) error // Новый метод для удаления
+
 }

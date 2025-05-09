@@ -27,3 +27,13 @@ func (r *GormPersonRepository) Create(ctx context.Context, person people.Person)
 	}
 	return person, nil
 }
+
+func (r *GormPersonRepository) Delete(ctx context.Context, id uint) error {
+
+	fmt.Println("Delete")
+
+	if err := r.db.Delete(&people.Person{}, id).Error; err != nil {
+		return err
+	}
+	return nil
+}
