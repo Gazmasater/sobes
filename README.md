@@ -66,21 +66,20 @@ curl -X POST http://localhost:8080/people \
 	"resource": "/home/gaz358/myprog/sobes/main.go",
 	"owner": "_generated_diagnostic_collection_name_#0",
 	"code": {
-		"value": "InvalidConversion",
+		"value": "IncompatibleAssign",
 		"target": {
 			"$mid": 1,
 			"path": "/golang.org/x/tools/internal/typesinternal",
 			"scheme": "https",
 			"authority": "pkg.go.dev",
-			"fragment": "InvalidConversion"
+			"fragment": "IncompatibleAssign"
 		}
 	},
 	"severity": 8,
-	"message": "cannot convert personUC (variable of type *usecase.PersonUseCaseImpl) to type adapterhttp.HTTPHandler",
+	"message": "cannot use handler (variable of type *adapterhttp.HTTPHandler) as adapterhttp.HTTPHandler value in argument to adapterhttp.SetupRoutes",
 	"source": "compiler",
-	"startLineNumber": 49,
-	"startColumn": 37,
-	"endLineNumber": 49,
-	"endColumn": 45
+	"startLineNumber": 52,
+	"startColumn": 31,
+	"endLineNumber": 52,
+	"endColumn": 38
 }]
-
