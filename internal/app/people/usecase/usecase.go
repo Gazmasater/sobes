@@ -2,11 +2,7 @@ package usecase
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"people/internal/app/people"
-	"people/internal/app/people/repos"
-	"people/internal/serv"
 )
 
 type PersonUseCase interface {
@@ -16,61 +12,25 @@ type PersonUseCase interface {
 	DeletePerson(ctx context.Context, id int64) error
 }
 
-type CreatePersonUseCase struct {
-	PersonRepository repos.PersonRepository
-	ExternalService  serv.ExternalService
+type PersonUseCaseImpl struct {
+	CreatePersonUseCase *CreatePersonUseCase
+	DeletePersonUseCase *DeletePersonUseCase
 }
 
-func NewCreatePersonUseCase(pr repos.PersonRepository, es serv.ExternalService) *CreatePersonUseCase {
-	return &CreatePersonUseCase{
-		PersonRepository: pr,
-		ExternalService:  es,
+func NewPersonUseCase(
+	createUC *CreatePersonUseCase,
+	deleteUC *DeletePersonUseCase,
+) *PersonUseCaseImpl {
+	return &PersonUseCaseImpl{
+		CreatePersonUseCase: createUC,
+		DeletePersonUseCase: deleteUC,
 	}
 }
 
-func (uc *CreatePersonUseCase) Execute(ctx context.Context, req people.Person) (people.Person, error) {
-
-	age := uc.ExternalService.GetAge(ctx, req.Name)
-	gender := uc.ExternalService.GetGender(ctx, req.Name)
-	nationality := uc.ExternalService.GetNationality(ctx, req.Name)
-
-	fmt.Printf("Execute  AGE=%d\n", age)
-	fmt.Printf("Execute  GENDER=%s\n", gender)
-	fmt.Printf("Execute  NATION=%s\n", nationality)
-
-	if age <= 0 || gender == "" || nationality == "" {
-		return people.Person{}, errors.New("failed to fetch valid external data")
-	}
-
-	person := people.Person{
-		Name:        req.Name,
-		Surname:     req.Surname,
-		Patronymic:  req.Patronymic,
-		Age:         age,
-		Gender:      gender,
-		Nationality: nationality,
-	}
-
-	createdPerson, err := uc.PersonRepository.Create(ctx, person)
-	if err != nil {
-		return people.Person{}, err
-	}
-
-	return createdPerson, nil
+func (uc *PersonUseCaseImpl) CreatePerson(ctx context.Context, req people.Person) (people.Person, error) {
+	return uc.CreatePersonUseCase.Execute(ctx, req)
 }
 
-type DeletePersonUseCase struct {
-	Repo repos.PersonRepository
-}
-
-func NewDeletePersonUseCase(repo repos.PersonRepository) *DeletePersonUseCase {
-	return &DeletePersonUseCase{Repo: repo}
-}
-
-func (uc *DeletePersonUseCase) Execute(ctx context.Context, id uint) error {
-
-	fmt.Println("DeletePersonUseCase Execute")
-	fmt.Printf("id=%d\n", id)
-
-	return uc.Repo.Delete(ctx, id)
+func (uc *PersonUseCaseImpl) DeletePerson(ctx context.Context, id int64) error {
+	return uc.DeletePersonUseCase.Execute(ctx, id)
 }

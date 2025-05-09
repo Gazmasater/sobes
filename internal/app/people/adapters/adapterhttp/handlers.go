@@ -10,16 +10,8 @@ import (
 )
 
 type Handler struct {
-	CreateUC *usecase.CreatePersonUseCase
-	DeleteUC *usecase.DeletePersonUseCase // Добавляем новый UseCase для удаления
-}
-
-func NewHandler_C(createUC *usecase.CreatePersonUseCase) Handler {
-	return Handler{CreateUC: createUC}
-}
-
-func NewHandler_D(deleteUC *usecase.DeletePersonUseCase) Handler {
-	return Handler{DeleteUC: deleteUC}
+	CreateUC *usecase.PersonUseCase
+	DeleteUC *usecase.PersonUseCase // Добавляем новый UseCase для удаления
 }
 
 func (h Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
