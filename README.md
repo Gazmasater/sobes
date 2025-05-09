@@ -21,6 +21,9 @@ internal/
     "patronymic": "Igorevich"
 }'
 
+curl -X DELETE "http://localhost:8080/person/123"
+
+
 
 
 
