@@ -76,3 +76,42 @@ func (r *GormPersonRepository) GetByID(ctx context.Context, id int64) (people.Pe
 }
 
 
+func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	idStr := chi.URLParam(r, "id")
+	logger.Debug(ctx, "Delete request received", "id", idStr)
+
+	if idStr == "" {
+		logger.Warn(ctx, "No ID provided in URL")
+		http.Error(w, `{"error":"missing ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		logger.Warn(ctx, "Invalid ID format", "id", idStr, "err", err)
+		http.Error(w, `{"error":"invalid ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("DeletePerson ID=%d\n", id)
+
+	_, err = h.PersonRepo.GetByID(ctx, id)
+	if err != nil {
+		logger.Warn(ctx, "Person not found", "id", id, "err", err)
+		http.Error(w, `{"error":"person not found"}`, http.StatusNotFound)
+		return
+	}
+
+	if err := h.PersonRepo.Delete(ctx, id); err != nil {
+		logger.Error(ctx, "Failed to delete person", "id", id, "err", err)
+		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info(ctx, "Person deleted", "id", id)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+
+
