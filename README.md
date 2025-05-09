@@ -141,27 +141,52 @@ type PersonRepository interface {
 Теперь интерфейс PersonUseCase включает только методы для создания и удаления персоны, как ты и просил.
 
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "InvalidIfaceAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "InvalidIfaceAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use repo (variable of type *repos.GormPersonRepository) as repos.PersonRepository value in argument to usecase.NewCreatePersonUseCase: *repos.GormPersonRepository does not implement repos.PersonRepository (wrong type for method Create)\n\t\thave Create(people.Person) (people.Person, error)\n\t\twant Create(context.Context, people.Person) (people.Person, error)",
-	"source": "compiler",
-	"startLineNumber": 41,
-	"startColumn": 45,
-	"endLineNumber": 41,
-	"endColumn": 49
-}]
+package repos
+
+import (
+	"context"
+	"people/internal/app/people"
+
+	"gorm.io/gorm"
+)
+
+// GormPersonRepository репозиторий для работы с персоной в базе данных через GORM
+type GormPersonRepository struct {
+	DB *gorm.DB
+}
+
+// NewGormPersonRepository конструктор для создания нового репозитория
+func NewGormPersonRepository(db *gorm.DB) *GormPersonRepository {
+	return &GormPersonRepository{
+		DB: db,
+	}
+}
+
+// Create создает нового человека в базе данных
+func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
+	// Вставляем нового человека в таблицу
+	if err := r.DB.WithContext(ctx).Create(&person).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+}
+
+// GetByID получает персону по ID
+func (r *GormPersonRepository) GetByID(ctx context.Context, id int64) (people.Person, error) {
+	var person people.Person
+	if err := r.DB.WithContext(ctx).First(&person, id).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+}
+
+// Delete удаляет персону из базы данных
+func (r *GormPersonRepository) Delete(ctx context.Context, person people.Person) error {
+	if err := r.DB.WithContext(ctx).Delete(&person).Error; err != nil {
+		return err
+	}
+	return nil
+}
 
 
 
