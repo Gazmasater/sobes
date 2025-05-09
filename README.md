@@ -64,16 +64,52 @@ curl -X POST http://localhost:8080/people \
 
 
 
-type PersonUseCaseImpl struct {
-	repo repos.PersonRepository
+type PersonRepository interface {
+	Create(ctx context.Context, person people.Person) (people.Person, error)
+	Delete(ctx context.Context, id int64) error
+	GetByID(ctx context.Context, id int64) (people.Person, error)        // ✅ для получения по ID
+	Update(ctx context.Context, person people.Person) (people.Person, error) // ✅ для обновления
 }
+
+
+type GormPersonRepository struct {
+	DB *gorm.DB
+}
+
+func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
+	if err := r.DB.WithContext(ctx).Create(&person).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+}
+
+func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
+	return r.DB.WithContext(ctx).Delete(&people.Person{}, id).Error
+}
+
+func (r *GormPersonRepository) GetByID(ctx context.Context, id int64) (people.Person, error) {
+	var person people.Person
+	if err := r.DB.WithContext(ctx).First(&person, id).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+}
+
+func (r *GormPersonRepository) Update(ctx context.Context, person people.Person) (people.Person, error) {
+	if err := r.DB.WithContext(ctx).Save(&person).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+}
+
 
 func (uc *PersonUseCaseImpl) GetPersonByID(ctx context.Context, id int64) (people.Person, error) {
-	return uc.repo.GetByID(ctx, id)
+	return uc.CreatePersonUseCase.Repo.GetByID(ctx, id)
+}
+
+func (uc *PersonUseCaseImpl) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
+	return uc.CreatePersonUseCase.Repo.Update(ctx, person)
 }
 
 
-func NewPersonUseCase(repo repos.PersonRepository) *PersonUseCaseImpl {
-	return &PersonUseCaseImpl{repo: repo}
-}
 
