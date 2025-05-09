@@ -59,24 +59,12 @@ curl -X POST http://localhost:8080/people \
 	createUC := usecase.NewCreatePersonUseCase(repo, extService)
 
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "InvalidIfaceAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "InvalidIfaceAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use repo (variable of type *repos.GormPersonRepository) as repos.PersonRepository value in argument to usecase.NewCreatePersonUseCase: *repos.GormPersonRepository does not implement repos.PersonRepository (wrong type for method Create)\n\t\thave Create(people.Person) (people.Person, error)\n\t\twant Create(context.Context, people.Person) (people.Person, error)",
-	"source": "compiler",
-	"startLineNumber": 41,
-	"startColumn": 45,
-	"endLineNumber": 41,
-	"endColumn": 49
-}]
+func (uc *CreatePersonUseCase) DeletePerson(ctx context.Context, id int64) error {
+	person, err := uc.PersonRepository.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return uc.PersonRepository.Delete(ctx, person)
+}
+
