@@ -62,103 +62,35 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
 
 
-package main
-
-import (
-	"context"
-	"log"
-	"net/http"
-	"people/internal/app/people"
-	"people/internal/app/people/adapters/adapterhttp"
-	"people/internal/app/people/repos"
-	"people/internal/app/people/usecase"
-	"people/pkg/logger"
-
-	"github.com/joho/godotenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-)
-
-func main() {
-	ctx := logger.ToContext(context.Background(), logger.Global())
-
-	if err := godotenv.Load(); err != nil {
-		logger.Error(ctx, "No .env file found")
-	} else {
-		logger.Debug(ctx, "Successfully loaded .env file")
-	}
-
-	dsn := "host=localhost user=postgres password=qwert dbname=people port=5432 sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal("failed to connect to DB:", err)
-	}
-
-	// Миграция таблицы Person
-	db.AutoMigrate(&people.Person{})
-
-	// Создание зависимостей
-	repo := repos.NewPersonRepository(db)
-
-	// Create and Delete UseCases
-	createUC := usecase.NewCreatePersonUseCase(repo)
-	deleteUC := usecase.NewDeletePersonUseCase(repo)
-
-	// Объединённый интерфейс
-	personUC := usecase.NewPersonUseCase(createUC, deleteUC)
-
-	// Handler принимает один интерфейс
-	handler := adapterhttp.NewHandler(personUC)
-
-	// Запуск сервера
-	r := adapterhttp.SetupRoutes(handler)
-	log.Println("server started on :8080")
-	http.ListenAndServe(":8080", r)
+func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
+	return r.db.WithContext(ctx).Delete(&people.Person{}, id).Error
 }
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "InvalidIfaceAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "InvalidIfaceAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use repo (variable of type *repos.GormPersonRepository) as repos.PersonRepository value in argument to usecase.NewCreatePersonUseCase: *repos.GormPersonRepository does not implement repos.PersonRepository (wrong type for method Delete)\n\t\thave Delete(context.Context, uint) error\n\t\twant Delete(context.Context, int64) error",
-	"source": "compiler",
-	"startLineNumber": 42,
-	"startColumn": 45,
-	"endLineNumber": 42,
-	"endColumn": 49
-}]
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "InvalidConversion",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "InvalidConversion"
-		}
-	},
-	"severity": 8,
-	"message": "cannot convert personUC (variable of type *usecase.PersonUseCaseImpl) to type adapterhttp.Handler",
-	"source": "compiler",
-	"startLineNumber": 49,
-	"startColumn": 33,
-	"endLineNumber": 49,
-	"endColumn": 41
-}]
+type Handler interface {
+	Create(w http.ResponseWriter, r *http.Request)
+	Delete(w http.ResponseWriter, r *http.Request)
+}
+
+
+type HTTPHandler struct {
+	uc usecase.PersonUseCase
+}
+
+func NewHandler(uc usecase.PersonUseCase) *HTTPHandler {
+	return &HTTPHandler{uc: uc}
+}
+
+func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
+	// парсинг запроса и вызов h.uc.Create(...)
+}
+
+func (h *HTTPHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	// парсинг запроса и вызов h.uc.Delete(...)
+}
+
+
+handler := adapterhttp.NewHandler(personUC) // <- теперь корректно
 
 
 
