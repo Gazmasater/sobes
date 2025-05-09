@@ -1,6 +1,7 @@
 package serv
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,9 +9,9 @@ import (
 )
 
 type ExternalService interface {
-	GetAge(name string) int
-	GetGender(name string) string
-	GetNationality(name string) string
+	GetAge(ctx context.Context, name string) int
+	GetGender(ctx context.Context, name string) string
+	GetNationality(ctx context.Context, name string) string
 }
 
 type ExternalServiceImpl struct {
@@ -27,15 +28,15 @@ func NewExternalService() *ExternalServiceImpl {
 	}
 }
 
-func (es *ExternalServiceImpl) GetAge(name string) int {
-
-	fmt.Printf("GetAge NAME=%s\n", name)
-	fmt.Printf("GetAge API=%s\n", es.AgifyAPI)
-
+func (es *ExternalServiceImpl) GetAge(ctx context.Context, name string) int {
 	url := fmt.Sprintf("%s?name=%s", es.AgifyAPI, name)
-	fmt.Printf("GetAge URL=%s\n", url)
 
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return 0
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return 0
 	}
@@ -48,14 +49,19 @@ func (es *ExternalServiceImpl) GetAge(name string) int {
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return 0
 	}
-	fmt.Printf("GetAge AGE=%d\n", result.Age)
 
 	return result.Age
 }
 
-func (es *ExternalServiceImpl) GetGender(name string) string {
+func (es *ExternalServiceImpl) GetGender(ctx context.Context, name string) string {
 	url := fmt.Sprintf("%s?name=%s", es.GenderizeAPI, name)
-	resp, err := http.Get(url)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return ""
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return ""
 	}
@@ -71,24 +77,33 @@ func (es *ExternalServiceImpl) GetGender(name string) string {
 
 	return result.Gender
 }
-
-func (es *ExternalServiceImpl) GetNationality(name string) string {
+func (es *ExternalServiceImpl) GetNationality(ctx context.Context, name string) string {
 	url := fmt.Sprintf("%s?name=%s", es.NationalizeAPI, name)
-	fmt.Printf("GetNationality URL=%s\n", url)
-	resp, err := http.Get(url)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		fmt.Println("GetNationality")
+		return ""
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
 		return ""
 	}
 	defer resp.Body.Close()
 
 	var result struct {
-		Nationality string `json:"country_id"`
+		Country []struct {
+			CountryID string `json:"country_id"`
+		} `json:"country"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return ""
 	}
 
-	return result.Nationality
+	if len(result.Country) > 0 {
+		return result.Country[0].CountryID
+	}
+
+	return ""
 }

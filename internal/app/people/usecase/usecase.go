@@ -9,6 +9,13 @@ import (
 	"people/internal/serv"
 )
 
+type PersonUseCase interface {
+	// Создание новой персоны
+	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
+	// Удаление персоны по ID
+	DeletePerson(ctx context.Context, id int64) error
+}
+
 type CreatePersonUseCase struct {
 	PersonRepository repos.PersonRepository
 	ExternalService  serv.ExternalService
@@ -23,14 +30,13 @@ func NewCreatePersonUseCase(pr repos.PersonRepository, es serv.ExternalService) 
 
 func (uc *CreatePersonUseCase) Execute(ctx context.Context, req people.Person) (people.Person, error) {
 
-	fmt.Printf("Execute   NAME=%s\n", req.Name)
-	age := uc.ExternalService.GetAge(req.Name)
-	fmt.Printf("Execute AGE=%d\n", age)
-	gender := uc.ExternalService.GetGender(req.Name)
-	fmt.Printf("Execute GENDER=%s\n", gender)
+	age := uc.ExternalService.GetAge(ctx, req.Name)
+	gender := uc.ExternalService.GetGender(ctx, req.Name)
+	nationality := uc.ExternalService.GetNationality(ctx, req.Name)
 
-	nationality := uc.ExternalService.GetNationality(req.Name)
-	fmt.Printf("Execute NATIONAL=%s\n", nationality)
+	fmt.Printf("Execute  AGE=%d\n", age)
+	fmt.Printf("Execute  GENDER=%s\n", gender)
+	fmt.Printf("Execute  NATION=%s\n", nationality)
 
 	if age <= 0 || gender == "" || nationality == "" {
 		return people.Person{}, errors.New("failed to fetch valid external data")
@@ -45,10 +51,19 @@ func (uc *CreatePersonUseCase) Execute(ctx context.Context, req people.Person) (
 		Nationality: nationality,
 	}
 
-	createdPerson, err := uc.PersonRepository.Create(person)
+	createdPerson, err := uc.PersonRepository.Create(ctx, person)
 	if err != nil {
 		return people.Person{}, err
 	}
 
 	return createdPerson, nil
+}
+
+func (uc *CreatePersonUseCase) DeletePerson(ctx context.Context, id int64) error {
+	_, err := uc.PersonRepository.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return uc.PersonRepository.Delete(ctx, id)
 }
