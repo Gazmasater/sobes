@@ -62,28 +62,7 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
 
 
-package main
-
-import (
-	"context"
-	"log"
-	"net/http"
-	_ "people/docs"
-	"people/pkg/logger"
-
-	"people/internal/app/people"
-	"people/internal/app/people/adapters/adapterhttp"
-	"people/internal/app/people/repos"
-	"people/internal/app/people/usecase"
-	"people/internal/serv"
-
-	"github.com/joho/godotenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-)
-
 func main() {
-
 	ctx := logger.ToContext(context.Background(), logger.Global())
 
 	if err := godotenv.Load(); err != nil {
@@ -98,17 +77,29 @@ func main() {
 		log.Fatal("failed to connect to DB:", err)
 	}
 
+	// Миграция таблицы Person
 	db.AutoMigrate(&people.Person{})
 
+	// Создание зависимостей
 	repo := repos.NewPersonRepository(db)
 	extService := serv.NewExternalService()
-	createUC := usecase.NewCreatePersonUseCase(repo, extService)
-	handler := adapterhttp.NewHandler_C(createUC)
 
+	// Create and Delete UseCases
+	createUC := usecase.NewCreatePersonUseCase(repo)
+	deleteUC := usecase.NewDeletePersonUseCase(repo)
+
+	// Объединённый интерфейс
+	personUC := usecase.NewPersonUseCase(createUC, deleteUC)
+
+	// Handler принимает один интерфейс
+	handler := adapterhttp.NewHandler(personUC)
+
+	// Запуск сервера
 	r := adapterhttp.SetupRoutes(handler)
 	log.Println("server started on :8080")
 	http.ListenAndServe(":8080", r)
 }
+
 
 
 
