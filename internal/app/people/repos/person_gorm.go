@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"people/internal/app/people"
+	"people/pkg"
 
 	"gorm.io/gorm"
 )
@@ -22,19 +23,35 @@ func NewPersonRepository(db *gorm.DB) *GormPersonRepository {
 func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
 	fmt.Println("Create")
 
-	var existing people.Person
-	err := r.db.WithContext(ctx).Where("name = ? AND surname = ? AND patronymic = ?", person.Name, person.Surname, person.Patronymic).First(&existing).Error
+	// Нормализация
+	person.Name = pkg.NormalizeName(person.Name)
+	person.Surname = pkg.NormalizeName(person.Surname)
+	person.Patronymic = pkg.NormalizeName(person.Patronymic)
 
-	if err != nil {
-		if err != gorm.ErrRecordNotFound {
-			return people.Person{}, err
-		}
-	} else {
-		// Такой человек уже есть
-		return people.Person{}, fmt.Errorf("person already exists")
+	// Валидация имени и фамилии (обязательны)
+	if !pkg.IsValidName(person.Name) || !pkg.IsValidName(person.Surname) {
+		return people.Person{}, fmt.Errorf("invalid name or surname format")
 	}
 
-	// Добавляем, если не найден
+	// Отчество — необязательно, но если есть — проверим
+	if len(person.Patronymic) > 0 && !pkg.IsValidName(person.Patronymic) {
+		return people.Person{}, fmt.Errorf("invalid patronymic format")
+	}
+
+	// Проверка на уникальность
+	var existing people.Person
+	err := r.db.WithContext(ctx).
+		Where("name = ? AND surname = ? AND patronymic = ?", person.Name, person.Surname, person.Patronymic).
+		First(&existing).Error
+
+	if err == nil {
+		return people.Person{}, fmt.Errorf("person already exists")
+	}
+	if err != gorm.ErrRecordNotFound {
+		return people.Person{}, err
+	}
+
+	// Добавление
 	if err := r.db.Create(&person).Error; err != nil {
 		return people.Person{}, err
 	}
