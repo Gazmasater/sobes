@@ -71,23 +71,21 @@ personUC := usecase.NewPersonUseCase(createUC, deleteUC)
 	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
 	"owner": "_generated_diagnostic_collection_name_#0",
 	"code": {
-		"value": "UndeclaredImportedName",
+		"value": "IncompatibleAssign",
 		"target": {
 			"$mid": 1,
 			"path": "/golang.org/x/tools/internal/typesinternal",
 			"scheme": "https",
 			"authority": "pkg.go.dev",
-			"fragment": "UndeclaredImportedName"
+			"fragment": "IncompatibleAssign"
 		}
 	},
 	"severity": 8,
-	"message": "undefined: people.Repository",
+	"message": "cannot use id (variable of type int64) as uint value in argument to uc.Repo.Delete",
 	"source": "compiler",
-	"startLineNumber": 13,
-	"startColumn": 41,
-	"endLineNumber": 13,
-	"endColumn": 51
+	"startLineNumber": 30,
+	"startColumn": 29,
+	"endLineNumber": 30,
+	"endColumn": 31
 }]
-
-
 
