@@ -68,24 +68,23 @@ personUC := usecase.NewPersonUseCase(createUC, deleteUC)
 
 
 [{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/adapters/adapterhttp/handlers.go",
 	"owner": "_generated_diagnostic_collection_name_#0",
 	"code": {
-		"value": "IncompatibleAssign",
+		"value": "MissingFieldOrMethod",
 		"target": {
 			"$mid": 1,
 			"path": "/golang.org/x/tools/internal/typesinternal",
 			"scheme": "https",
 			"authority": "pkg.go.dev",
-			"fragment": "IncompatibleAssign"
+			"fragment": "MissingFieldOrMethod"
 		}
 	},
 	"severity": 8,
-	"message": "cannot use id (variable of type int64) as uint value in argument to uc.Repo.Delete",
+	"message": "h.CreateUC.Execute undefined (type *usecase.PersonUseCase is pointer to interface, not interface)",
 	"source": "compiler",
-	"startLineNumber": 30,
-	"startColumn": 29,
-	"endLineNumber": 30,
-	"endColumn": 31
+	"startLineNumber": 32,
+	"startColumn": 35,
+	"endLineNumber": 32,
+	"endColumn": 42
 }]
-
