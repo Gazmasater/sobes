@@ -143,5 +143,24 @@ func (r *GormPersonRepository) GetByID(ctx context.Context, id int64) (people.Pe
 }
 
 
+func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
+    // Ищем объект по ID перед удалением
+    var person people.Person
+    if err := r.db.WithContext(ctx).First(&person, id).Error; err != nil {
+        // Если объект не найден, возвращаем ошибку
+        return fmt.Errorf("person not found: %v", err)
+    }
+
+    // После нахождения объекта передаем его в запрос на удаление
+    if err := r.db.WithContext(ctx).Delete(&person).Error; err != nil {
+        return fmt.Errorf("failed to delete person: %v", err)
+    }
+
+    fmt.Println("Person deleted successfully with ID:", id)
+    return nil
+}
+
+
+
 
 
