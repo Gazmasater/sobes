@@ -54,10 +54,12 @@ git rm --cached textDB
 curl -X POST http://localhost:8080/people \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Иван",
+    "name": "Dmitriy",
     "surname": "Иванов",
     "patronymic": "Иванович"
   }'
+
+  curl -X DELETE "http://localhost:8080/people/26"
 
 
 type PersonRepository interface {
