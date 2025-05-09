@@ -114,50 +114,14 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-r.Put("/people/{id}", h.UpdatePerson)
+type PersonUseCase interface {
+	// Создание новой персоны
+	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
+	// Удаление персоны по ID
+	DeletePerson(ctx context.Context, id int64) error
+	
 
-
-
-func (r *GormPersonRepository) GetByID(ctx context.Context, id int64) (people.Person, error) {
-	var person people.Person
-	if err := r.db.WithContext(ctx).First(&person, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return people.Person{}, fmt.Errorf("person not found")
-		}
-		return people.Person{}, err
-	}
-	return person, nil
 }
 
 
-func (r *GormPersonRepository) ExistsByFullName(ctx context.Context, name, surname, patronymic string) (bool, error) {
-	var count int64
-	err := r.db.WithContext(ctx).
-		Model(&people.Person{}).
-		Where("name = ? AND surname = ? AND patronymic = ?", name, surname, patronymic).
-		Count(&count).Error
-
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
-}
-
-
-func (r *GormPersonRepository) Update(ctx context.Context, person people.Person) (people.Person, error) {
-	if err := r.db.WithContext(ctx).Save(&person).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-}
-
-
-type PersonRepository interface {
-	Create(ctx context.Context, person Person) (Person, error)
-	Delete(ctx context.Context, id int64) error
-
-	GetByID(ctx context.Context, id int64) (Person, error)
-	Update(ctx context.Context, person Person) (Person, error)
-	ExistsByFullName(ctx context.Context, name, surname, patronymic string) (bool, error)
-}
 
