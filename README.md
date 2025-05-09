@@ -1,3 +1,7 @@
+
+DROP TABLE IF EXISTS people;
+
+
 internal/
 └── app/
     └── mydomain/
