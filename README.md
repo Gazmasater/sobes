@@ -62,18 +62,41 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
   
 
-if err != nil {
+
+func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
+	fmt.Println("Create")
+
+	// Нормализация
+	person.Name = pkg.NormalizeName(person.Name)
+	person.Surname = pkg.NormalizeName(person.Surname)
+	person.Patronymic = pkg.NormalizeName(person.Patronymic)
+
+	// Валидация имени и фамилии (обязательны)
+	if !pkg.IsValidName(person.Name) || !pkg.IsValidName(person.Surname) {
+		return people.Person{}, fmt.Errorf("invalid name or surname format")
+	}
+
+	// Отчество — необязательно, но если есть — проверим
+	if len(person.Patronymic) > 0 && !pkg.IsValidName(person.Patronymic) {
+		return people.Person{}, fmt.Errorf("invalid patronymic format")
+	}
+
+	// Проверка на уникальность
+	var existing people.Person
+	err := r.db.WithContext(ctx).
+		Where("name = ? AND surname = ? AND patronymic = ?", person.Name, person.Surname, person.Patronymic).
+		First(&existing).Error
+
+	if err == nil {
+		return people.Person{}, fmt.Errorf("person already exists")
+	}
 	if err != gorm.ErrRecordNotFound {
 		return people.Person{}, err
 	}
-} else {
-	// Такой человек уже есть
-	return people.Person{}, fmt.Errorf("person already exists")
+
+	// Добавление
+	if err := r.db.Create(&person).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
 }
-
-
-
-
-
-
-
