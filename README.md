@@ -62,21 +62,7 @@ curl -X POST http://localhost:8080/people \
   curl -X DELETE "http://localhost:8080/people/26"
 
 
-package usecase
-
-import (
-	"context"
-	"people/internal/app/people"
-)
-
-type PersonUseCase interface {
-	// Создание новой персоны
-	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
-	// Удаление персоны по ID
-	DeletePerson(ctx context.Context, id int64) error
-}
-
-type PersonUseCase struct {
+type PersonUseCaseImpl struct {
 	CreatePersonUseCase *CreatePersonUseCase
 	DeletePersonUseCase *DeletePersonUseCase
 }
@@ -84,84 +70,22 @@ type PersonUseCase struct {
 func NewPersonUseCase(
 	createUC *CreatePersonUseCase,
 	deleteUC *DeletePersonUseCase,
-) *PersonUseCase {
-	return &PersonUseCase{
+) *PersonUseCaseImpl {
+	return &PersonUseCaseImpl{
 		CreatePersonUseCase: createUC,
 		DeletePersonUseCase: deleteUC,
 	}
 }
 
-func (uc *PersonUseCase) CreatePerson(ctx context.Context, req people.Person) (people.Person, error) {
+func (uc *PersonUseCaseImpl) CreatePerson(ctx context.Context, req people.Person) (people.Person, error) {
 	return uc.CreatePersonUseCase.Execute(ctx, req)
 }
 
-func (uc *PersonUseCase) DeletePerson(ctx context.Context, id uint) error {
+func (uc *PersonUseCaseImpl) DeletePerson(ctx context.Context, id uint) error {
 	return uc.DeletePersonUseCase.Execute(ctx, id)
 }
 
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "DuplicateDecl",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "DuplicateDecl"
-		}
-	},
-	"severity": 8,
-	"message": "PersonUseCase redeclared in this block (see details)",
-	"source": "compiler",
-	"startLineNumber": 8,
-	"startColumn": 6,
-	"endLineNumber": 8,
-	"endColumn": 19,
-	"relatedInformation": [
-		{
-			"startLineNumber": 15,
-			"startColumn": 6,
-			"endLineNumber": 15,
-			"endColumn": 19,
-			"message": "",
-			"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go"
-		}
-	]
-}]
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "DuplicateDecl",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "DuplicateDecl"
-		}
-	},
-	"severity": 8,
-	"message": "PersonUseCase redeclared in this block",
-	"source": "compiler",
-	"startLineNumber": 15,
-	"startColumn": 6,
-	"endLineNumber": 15,
-	"endColumn": 19,
-	"relatedInformation": [
-		{
-			"startLineNumber": 8,
-			"startColumn": 6,
-			"endLineNumber": 8,
-			"endColumn": 19,
-			"message": "other declaration of PersonUseCase",
-			"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go"
-		}
-	]
-}]
-
+personUseCase := usecase.NewPersonUseCase(createPersonUC, deletePersonUC) // если структура PersonUseCaseImpl
 
