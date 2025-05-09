@@ -45,9 +45,15 @@ git rm --cached textDB
 
 
 
-func (es *ExternalServiceImpl) GetGender(name string) string {
+func (es *ExternalServiceImpl) GetGender(ctx context.Context, name string) string {
 	url := fmt.Sprintf("%s?name=%s", es.GenderizeAPI, name)
-	resp, err := http.Get(url)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return ""
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return ""
 	}
