@@ -82,7 +82,27 @@ func (r *GormPersonRepository) Create(ctx context.Context, person people.Person)
 	return person, nil
 }
 
-
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/repos/person_gorm.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "cond",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/go/analysis/passes/nilness",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "cond"
+		}
+	},
+	"severity": 4,
+	"message": "tautological condition: non-nil != nil",
+	"source": "nilness",
+	"startLineNumber": 31,
+	"startColumn": 10,
+	"endLineNumber": 31,
+	"endColumn": 10
+}]
 
 
 
