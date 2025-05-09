@@ -67,6 +67,135 @@ deleteUC := usecase.NewDeletePersonUseCase(repo)
 personUC := usecase.NewPersonUseCase(createUC, deleteUC)
 
 
+package usecase
+
+import (
+	"context"
+	"people/internal/app/people"
+	"people/internal/app/people/repos"
+)
+
+type CreatePersonUseCase struct {
+	Repo repos.PersonRepository
+}
+
+func NewCreatePersonUseCase(repo repos.PersonRepository) *CreatePersonUseCase {
+	return &CreatePersonUseCase{Repo: repo}
+}
+
+func (uc *CreatePersonUseCase) Execute(ctx context.Context, person people.Person) (people.Person, error) {
+	return uc.Repo.Create(ctx, person)
+}
+
+type DeletePersonUseCase struct {
+	Repo repos.PersonRepository
+}
+
+func NewDeletePersonUseCase(repo repos.PersonRepository) *DeletePersonUseCase {
+	return &DeletePersonUseCase{Repo: repo}
+}
+
+func (uc *DeletePersonUseCase) Execute(ctx context.Context, id int64) error {
+	return uc.Repo.Delete(ctx, id)
+}
+
+type PersonUseCase interface {
+	// Создание новой персоны
+	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
+	// Удаление персоны по ID
+	DeletePerson(ctx context.Context, id int64) error
+}
+
+type PersonUseCaseImpl struct {
+	CreatePersonUseCase *CreatePersonUseCase
+	DeletePersonUseCase *DeletePersonUseCase
+}
+
+func NewPersonUseCase(
+	createUC *CreatePersonUseCase,
+	deleteUC *DeletePersonUseCase,
+) *PersonUseCaseImpl {
+	return &PersonUseCaseImpl{
+		CreatePersonUseCase: createUC,
+		DeletePersonUseCase: deleteUC,
+	}
+}
+
+func (uc *PersonUseCaseImpl) CreatePerson(ctx context.Context, req people.Person) (people.Person, error) {
+	return uc.CreatePersonUseCase.Execute(ctx, req)
+}
+
+func (uc *PersonUseCaseImpl) DeletePerson(ctx context.Context, id int64) error {
+	return uc.DeletePersonUseCase.Execute(ctx, id)
+}
+
+
+package adapterhttp
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"people/internal/app/people"
+	"people/internal/app/people/usecase"
+	"strconv"
+)
+
+type Handler struct {
+	CreateUC usecase.PersonUseCase
+	DeleteUC usecase.PersonUseCase // Добавляем новый UseCase для удаления
+}
+
+func (h Handler) CreatePerson(w http.ResponseWriter, r *http.Request) {
+	var req CreatePersonRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	person := people.Person{
+		Name:       req.Name,
+		Surname:    req.Surname,
+		Patronymic: req.Patronymic,
+	}
+
+	fmt.Printf("PERSON NAme=%s Surname=%s\n", person.Name, person.Surname)
+
+	createdPerson, err := h.CreateUC.Execute(r.Context(), person)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp := ToResponse(createdPerson)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (h Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	// Извлекаем ID из URL
+
+	idStr := r.URL.Path[len("/people/"):]
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Deleting person with ID: %d\n", id)
+
+	// Вызываем UseCase для удаления
+	err = h.DeleteUC.Execute(r.Context(), uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+
 [{
 	"resource": "/home/gaz358/myprog/sobes/internal/app/people/adapters/adapterhttp/handlers.go",
 	"owner": "_generated_diagnostic_collection_name_#0",
@@ -81,10 +210,10 @@ personUC := usecase.NewPersonUseCase(createUC, deleteUC)
 		}
 	},
 	"severity": 8,
-	"message": "h.CreateUC.Execute undefined (type *usecase.PersonUseCase is pointer to interface, not interface)",
+	"message": "h.DeleteUC.Execute undefined (type usecase.PersonUseCase has no field or method Execute)",
 	"source": "compiler",
-	"startLineNumber": 32,
-	"startColumn": 35,
-	"endLineNumber": 32,
-	"endColumn": 42
+	"startLineNumber": 57,
+	"startColumn": 19,
+	"endLineNumber": 57,
+	"endColumn": 26
 }]
