@@ -24,6 +24,9 @@ type PersonUseCase interface {
 	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
 	// Удаление персоны по ID
 	DeletePerson(ctx context.Context, id int64) error
+
+	UpdatePerson(ctx context.Context, person people.Person) (people.Person, error)
+	GetPersonByID(ctx context.Context, id int64) (people.Person, error)
 }
 
 func NewPersonUseCase(
