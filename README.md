@@ -102,134 +102,25 @@ curl -X POST http://localhost:8080/people \
 swag init -g cmd/main.go -o docs
 
 
-package people
 
-import "gorm.io/gorm"
 
-// Person структура для представления человека
-type Person struct {
-	ID         int64  `json:"id" gorm:"primaryKey"`
-	Name       string `json:"name" gorm:"index"`
-	Surname    string `json:"surname" gorm:"index"`
-	Patronymic string `json:"patronymic" gorm:"index"`
-	Age        int    `json:"age"`
-	Gender     string `json:"gender"`
-	Nationality string `json:"nationality"`
-}
-
-// AddIndexes добавляет индексы для оптимизации запросов
-func (Person) AddIndexes(db *gorm.DB) error {
+func AddIndexes(db *gorm.DB) error {
+	// Добавление индекса для поля Name
 	if err := db.Model(&Person{}).AddIndex("idx_name", "name").Error; err != nil {
 		return err
 	}
+
+	// Добавление индекса для поля Surname
 	if err := db.Model(&Person{}).AddIndex("idx_surname", "surname").Error; err != nil {
 		return err
 	}
+
+	// Добавление индекса для поля Patronymic
 	if err := db.Model(&Person{}).AddIndex("idx_patronymic", "patronymic").Error; err != nil {
 		return err
 	}
+
+	// При необходимости добавьте индексы для других полей
+
 	return nil
 }
-
-
-
-func main() {
-	// Инициализация логгера и контекста
-	logger.SetLogger(logger.New(zapcore.DebugLevel))
-	ctx := logger.ToContext(context.Background(), logger.Global())
-
-	// Загрузка переменных окружения
-	if err := godotenv.Load(); err != nil {
-		logger.Error(ctx, "No .env file found")
-	} else {
-		logger.Debug(ctx, "Successfully loaded .env file")
-	}
-
-	// Подключение к базе данных
-	host := os.Getenv("DB_HOST")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	dbname := os.Getenv("DB_NAME")
-	port := os.Getenv("DB_PORT")
-	sslmode := os.Getenv("DB_SSLMODE")
-
-	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
-		host, user, password, dbname, port, sslmode,
-	)
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal("failed to connect to DB:", err)
-	}
-
-	// Автоматическая миграция для таблицы Person
-	db.AutoMigrate(&people.Person{})
-
-	// Создание индексов для оптимизации поиска
-	if err := people.Person{}.AddIndexes(db); err != nil {
-		logger.Fatal(ctx, "Failed to create indexes", "error", err)
-	}
-
-	// Инициализация репозитория, юзкейсов и обработчиков
-	repo := repos.NewPersonRepository(db)
-	createUC := usecase.NewCreatePersonUseCase(repo)
-	deleteUC := usecase.NewDeletePersonUseCase(repo)
-	personUC := usecase.NewPersonUseCase(createUC, deleteUC)
-	svc := serv.NewExternalService()
-	handler := adapterhttp.NewHandler(personUC, svc)
-
-	// Регистрируем маршруты и запускаем сервер
-	handler.RegisterRoutes(r)
-
-	port_s := os.Getenv("SERVER_PORT")
-	if port_s == "" {
-		port_s = "8080"
-	}
-	logger.Debugf(ctx, "Using port: %s", port_s)
-
-	logger.Infof(ctx, "Starting server on port: %s", port_s)
-
-	srv := &http.Server{
-		Addr:         ":" + port_s,
-		Handler:      r,
-		ReadTimeout:  readTimeout,
-		WriteTimeout: writeTimeout,
-		IdleTimeout:  idleTimeout,
-	}
-
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
-
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Fatalf(ctx, "Server failed: %v", err)
-	}
-}
-
-
-[{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/domain.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "MissingFieldOrMethod",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "MissingFieldOrMethod"
-		}
-	},
-	"severity": 8,
-	"message": "db.Model(&Person{}).AddIndex undefined (type *gorm.DB has no field or method AddIndex)",
-	"source": "compiler",
-	"startLineNumber": 29,
-	"startColumn": 32,
-	"endLineNumber": 29,
-	"endColumn": 40
-}]
-
-
-
-
-
-
