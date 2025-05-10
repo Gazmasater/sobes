@@ -206,6 +206,29 @@ func main() {
 }
 
 
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/domain.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "MissingFieldOrMethod",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "MissingFieldOrMethod"
+		}
+	},
+	"severity": 8,
+	"message": "db.Model(&Person{}).AddIndex undefined (type *gorm.DB has no field or method AddIndex)",
+	"source": "compiler",
+	"startLineNumber": 29,
+	"startColumn": 32,
+	"endLineNumber": 29,
+	"endColumn": 40
+}]
+
+
 
 
 
