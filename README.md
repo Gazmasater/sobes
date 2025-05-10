@@ -104,45 +104,27 @@ swag init -g cmd/main.go -o docs
 
 
 
-func AddIndexes(db *gorm.DB) error {
-	// Добавление индекса для поля Name
-	if err := db.Model(&Person{}).AddIndex("idx_name", "name").Error; err != nil {
-		return err
-	}
+// internal/app/people/migration.go
+package people
 
-	// Добавление индекса для поля Surname
-	if err := db.Model(&Person{}).AddIndex("idx_surname", "surname").Error; err != nil {
-		return err
-	}
-
-	// Добавление индекса для поля Patronymic
-	if err := db.Model(&Person{}).AddIndex("idx_patronymic", "patronymic").Error; err != nil {
-		return err
-	}
-
-	// При необходимости добавьте индексы для других полей
-
-	return nil
+type PersonMigration struct {
+	ID         uint   `gorm:"primaryKey"`
+	Name       string `gorm:"index"`
+	Surname    string `gorm:"index"`
+	Patronymic string `gorm:"index"`
+	Age        int
 }
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/domain.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "MissingFieldOrMethod",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "MissingFieldOrMethod"
-		}
-	},
-	"severity": 8,
-	"message": "db.Model(&Person{}).AddIndex undefined (type *gorm.DB has no field or method AddIndex)",
-	"source": "compiler",
-	"startLineNumber": 29,
-	"startColumn": 32,
-	"endLineNumber": 29,
-	"endColumn": 40
-}]
+
+func MigratePersonSchema(db *gorm.DB) {
+	err := db.AutoMigrate(&PersonMigration{})
+	if err != nil {
+		log.Fatalf("failed to migrate Person schema: %v", err)
+	}
+}
+
+people.MigratePersonSchema(db)
+
+
+
+
