@@ -1,3 +1,4 @@
+go install github.com/swaggo/swag/cmd/swag@latest
 
 DROP TABLE IF EXISTS people;
 
