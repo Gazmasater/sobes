@@ -102,57 +102,50 @@ curl -X POST http://localhost:8080/people \
 swag init -g cmd/main.go -o docs
 
 
-package main
+package people
 
-import (
-	"context"
-	"fmt"
-	"log"
-	"net/http"
-	"os"
+import "gorm.io/gorm"
 
-	_ "people/docs"
-	"people/pkg/logger"
-	"time"
+// Person структура для представления человека
+type Person struct {
+	ID         int64  `json:"id" gorm:"primaryKey"`
+	Name       string `json:"name" gorm:"index"`
+	Surname    string `json:"surname" gorm:"index"`
+	Patronymic string `json:"patronymic" gorm:"index"`
+	Age        int    `json:"age"`
+	Gender     string `json:"gender"`
+	Nationality string `json:"nationality"`
+}
 
-	"people/internal/app/people"
-	"people/internal/app/people/adapters/adapterhttp"
-	"people/internal/app/people/repos"
-	"people/internal/app/people/usecase"
-	"people/internal/serv"
+// AddIndexes добавляет индексы для оптимизации запросов
+func (Person) AddIndexes(db *gorm.DB) error {
+	if err := db.Model(&Person{}).AddIndex("idx_name", "name").Error; err != nil {
+		return err
+	}
+	if err := db.Model(&Person{}).AddIndex("idx_surname", "surname").Error; err != nil {
+		return err
+	}
+	if err := db.Model(&Person{}).AddIndex("idx_patronymic", "patronymic").Error; err != nil {
+		return err
+	}
+	return nil
+}
 
-	"github.com/go-chi/chi"
-	"github.com/joho/godotenv"
-	httpSwagger "github.com/swaggo/http-swagger"
-	"go.uber.org/zap/zapcore"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-)
 
-const (
-	readTimeout  = 10 * time.Second
-	writeTimeout = 10 * time.Second
-	idleTimeout  = 120 * time.Second
-)
 
-// @title           People API
-// @version         1.0
-// @description     API for managing people.
-// @host            localhost:8080
-// @BasePath        /
 func main() {
-
+	// Инициализация логгера и контекста
 	logger.SetLogger(logger.New(zapcore.DebugLevel))
-
 	ctx := logger.ToContext(context.Background(), logger.Global())
-	r := chi.NewRouter()
 
+	// Загрузка переменных окружения
 	if err := godotenv.Load(); err != nil {
 		logger.Error(ctx, "No .env file found")
 	} else {
 		logger.Debug(ctx, "Successfully loaded .env file")
 	}
 
+	// Подключение к базе данных
 	host := os.Getenv("DB_HOST")
 	user := os.Getenv("DB_USER")
 	password := os.Getenv("DB_PASSWORD")
@@ -170,25 +163,30 @@ func main() {
 		log.Fatal("failed to connect to DB:", err)
 	}
 
+	// Автоматическая миграция для таблицы Person
+	db.AutoMigrate(&people.Person{})
+
+	// Создание индексов для оптимизации поиска
+	if err := people.Person{}.AddIndexes(db); err != nil {
+		logger.Fatal(ctx, "Failed to create indexes", "error", err)
+	}
+
+	// Инициализация репозитория, юзкейсов и обработчиков
+	repo := repos.NewPersonRepository(db)
+	createUC := usecase.NewCreatePersonUseCase(repo)
+	deleteUC := usecase.NewDeletePersonUseCase(repo)
+	personUC := usecase.NewPersonUseCase(createUC, deleteUC)
+	svc := serv.NewExternalService()
+	handler := adapterhttp.NewHandler(personUC, svc)
+
+	// Регистрируем маршруты и запускаем сервер
+	handler.RegisterRoutes(r)
+
 	port_s := os.Getenv("SERVER_PORT")
 	if port_s == "" {
 		port_s = "8080"
 	}
 	logger.Debugf(ctx, "Using port: %s", port_s)
-
-	db.AutoMigrate(&people.Person{})
-
-	repo := repos.NewPersonRepository(db)
-
-	createUC := usecase.NewCreatePersonUseCase(repo)
-	deleteUC := usecase.NewDeletePersonUseCase(repo)
-
-	personUC := usecase.NewPersonUseCase(createUC, deleteUC)
-	svc := serv.NewExternalService()
-
-	handler := adapterhttp.NewHandler(personUC, svc)
-
-	handler.RegisterRoutes(r)
 
 	logger.Infof(ctx, "Starting server on port: %s", port_s)
 
@@ -205,8 +203,6 @@ func main() {
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Fatalf(ctx, "Server failed: %v", err)
 	}
-	http.Handle("/swagger/", http.StripPrefix("/swagger/", http.FileServer(http.Dir("./docs"))))
-
 }
 
 
