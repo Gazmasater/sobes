@@ -90,59 +90,77 @@ curl -X POST http://localhost:8080/people \
 
 
 
-func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+package main
 
-	// Получаем ID из URL
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	_ "people/docs"
+	"people/pkg/logger"
+
+	"people/internal/app/people"
+	"people/internal/app/people/adapters/adapterhttp"
+	"people/internal/app/people/repos"
+	"people/internal/app/people/usecase"
+	"people/internal/serv"
+
+	"github.com/go-chi/chi"
+	"github.com/joho/godotenv"
+	"go.uber.org/zap/zapcore"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+)
+
+func main() {
+
+	logger.SetLogger(logger.New(zapcore.DebugLevel))
+
+	ctx := logger.ToContext(context.Background(), logger.Global())
+	r := chi.NewRouter()
+
+	if err := godotenv.Load(); err != nil {
+		logger.Error(ctx, "No .env file found")
+	} else {
+		logger.Debug(ctx, "Successfully loaded .env file")
+	}
+
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080"
+	}
+	logger.Debugf(ctx, "Using port: %s", port)
+
+	dsn := "host=localhost user=postgres password=qwert dbname=people port=5432 sslmode=disable"
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
-		return
+		log.Fatal("failed to connect to DB:", err)
 	}
 
-	// Декодируем тело запроса
-	var req CreatePersonRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
+	// Миграция таблицы Person
+	db.AutoMigrate(&people.Person{})
 
-	// Получаем текущие данные из базы
-	existing, err := h.uc.GetPersonByID(ctx, id)
-	if err != nil {
-		http.Error(w, "person not found", http.StatusNotFound)
-		return
-	}
+	// Создание зависимостей
+	repo := repos.NewPersonRepository(db)
 
-	// Проверяем, изменилось ли имя
-	nameChanged := existing.Name != req.Name
+	// Create and Delete UseCases
+	createUC := usecase.NewCreatePersonUseCase(repo)
+	deleteUC := usecase.NewDeletePersonUseCase(repo)
 
-	// Обновляем все поля
-	existing.Name = req.Name
-	existing.Surname = req.Surname
-	existing.Patronymic = req.Patronymic
-	existing.Age = req.Age
-	existing.Gender = req.Gender
-	existing.Nationality = req.Nationality
+	// Объединённый интерфейс
+	personUC := usecase.NewPersonUseCase(createUC, deleteUC)
+	svc := serv.NewExternalService()
 
-	// При изменении имени — обогащаем данными
-	if nameChanged {
-		existing.Age = h.svc.GetAge(ctx, req.Name)
-		existing.Gender = h.svc.GetGender(ctx, req.Name)
-		existing.Nationality = h.svc.GetNationality(ctx, req.Name)
-	}
+	// Handler принимает один интерфейс
+	handler := adapterhttp.NewHandler(personUC, svc)
 
-	// Сохраняем изменения
-	updated, err := h.uc.UpdatePerson(ctx, existing)
-	if err != nil {
-		http.Error(w, "failed to update person", http.StatusInternalServerError)
-		return
-	}
+	handler.RegisterRoutes(r)
 
-	// Ответ
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ToResponse(updated))
+	// Запуск сервера
+	log.Printf("server started on :%s", port)
+	http.ListenAndServe(":8080", r)
 }
+
 
 
