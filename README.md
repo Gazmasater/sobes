@@ -104,26 +104,99 @@ swag init -g cmd/main.go -o docs
 
 
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "InvalidIfaceAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "InvalidIfaceAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use repo (variable of type *repos.GormPersonRepository) as repos.PersonRepository value in argument to usecase.NewCreatePersonUseCase: *repos.GormPersonRepository does not implement repos.PersonRepository (missing method CreatePerson)",
-	"source": "compiler",
-	"startLineNumber": 79,
-	"startColumn": 45,
-	"endLineNumber": 79,
-	"endColumn": 49
-}]
+type PersonRepository interface {
+	CreatePerson(ctx context.Context, person people.Person) (people.Person, error)
+	DeletePerson(ctx context.Context, id int64) error
+	UpdatePerson(ctx context.Context, person people.Person) (people.Person, error)
+	GetPersonByID(ctx context.Context, id int64) (people.Person, error)
+	GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error)
+}
 
+
+package repos
+
+import (
+	"context"
+	"people/internal/app/people"
+
+	"gorm.io/gorm"
+)
+
+type GormPersonRepository struct {
+	DB *gorm.DB
+}
+
+func (r *GormPersonRepository) CreatePerson(ctx context.Context, person people.Person) (people.Person, error) {
+	if err := r.DB.WithContext(ctx).Create(&person).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+}
+
+func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error {
+	return r.DB.WithContext(ctx).Delete(&people.Person{}, id).Error
+}
+
+func (r *GormPersonRepository) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
+	if err := r.DB.WithContext(ctx).Save(&person).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+}
+
+func (r *GormPersonRepository) GetPersonByID(ctx context.Context, id int64) (people.Person, error) {
+	var person people.Person
+	if err := r.DB.WithContext(ctx).First(&person, id).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+}
+
+func (r *GormPersonRepository) GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error) {
+	var peopleList []people.Person
+	query := r.DB.WithContext(ctx)
+
+	if filter.Gender != "" {
+		query = query.Where("gender = ?", filter.Gender)
+	}
+	if filter.Nationality != "" {
+		query = query.Where("nationality = ?", filter.Nationality)
+	}
+	if filter.Name != "" {
+		query = query.Where("name ILIKE ?", "%"+filter.Name+"%")
+	}
+	if filter.Surname != "" {
+		query = query.Where("surname ILIKE ?", "%"+filter.Surname+"%")
+	}
+	if filter.Patronymic != "" {
+		query = query.Where("patronymic ILIKE ?", "%"+filter.Patronymic+"%")
+	}
+	if filter.Age > 0 {
+		query = query.Where("age = ?", filter.Age)
+	}
+
+	if filter.SortBy != "" {
+		order := "asc"
+		if filter.Order == "desc" {
+			order = "desc"
+		}
+		allowed := map[string]bool{
+			"id": true, "name": true, "surname": true,
+			"patronymic": true, "age": true, "gender": true, "nationality": true,
+		}
+		if allowed[filter.SortBy] {
+			query = query.Order(filter.SortBy + " " + order)
+		}
+	}
+
+	if filter.Limit == 0 {
+		filter.Limit = 10
+	}
+	query = query.Limit(filter.Limit).Offset(filter.Offset)
+
+	if err := query.Find(&peopleList).Error; err != nil {
+		return nil, err
+	}
+	return peopleList, nil
+}
 
