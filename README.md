@@ -106,8 +106,8 @@ swag init -g cmd/main.go -o docs
 
 type Person_Migr struct {
 	ID          uint   `gorm:"primaryKey"`
-	Name        string
-	Surname     string
+	Name        string `gorm:"index:idx_name_surname"`
+	Surname     string `gorm:"index:idx_name_surname"`
 	Patronymic  string
 	Age         int
 	Gender      string
@@ -115,16 +115,9 @@ type Person_Migr struct {
 }
 
 func MigratePersonSchema(ctx context.Context, db *gorm.DB) {
-	// Выполнение авто-миграции для создания таблиц
-	err := db.AutoMigrate(&Person_Migr{})
-	if err != nil {
+	// Выполнение авто-миграции для создания таблицы и индексов
+	if err := db.AutoMigrate(&Person_Migr{}); err != nil {
 		logger.Fatalf(ctx, "failed to migrate Person schema: %v", err)
-	}
-
-	// Создание составного индекса для полей Name и Surname
-	err = db.Migrator().CreateIndex(&Person_Migr{}, "idx_name_surname", "name", "surname")
-	if err != nil {
-		logger.Fatalf(ctx, "failed to create index: %v", err)
 	}
 }
 
