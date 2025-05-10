@@ -118,6 +118,28 @@ func MigratePersonSchema(ctx context.Context, db *gorm.DB) {
 }
 
 
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/domain.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "WrongArgCount",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "WrongArgCount"
+		}
+	},
+	"severity": 8,
+	"message": "too many arguments in call to db.Migrator().CreateIndex\n\thave (*Person, string, []string)\n\twant (interface{}, string)",
+	"source": "compiler",
+	"startLineNumber": 39,
+	"startColumn": 65,
+	"endLineNumber": 39,
+	"endColumn": 92
+}]
+
 
 
 
