@@ -227,4 +227,25 @@ func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "UndeclaredImportedName",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "UndeclaredImportedName"
+		}
+	},
+	"severity": 8,
+	"message": "undefined: repos.PersonRepository",
+	"source": "compiler",
+	"startLineNumber": 10,
+	"startColumn": 13,
+	"endLineNumber": 10,
+	"endColumn": 29
+}]
 
