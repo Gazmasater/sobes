@@ -1,5 +1,12 @@
 package people
 
+import (
+	"context"
+	"people/pkg/logger"
+
+	"gorm.io/gorm"
+)
+
 type Person struct {
 	ID          uint
 	Name        string
@@ -21,4 +28,19 @@ type Filter struct {
 	Order       string
 	Limit       int
 	Offset      int
+}
+
+type PersonMigration struct {
+	ID         uint   `gorm:"primaryKey"`
+	Name       string `gorm:"index"`
+	Surname    string `gorm:"index"`
+	Patronymic string `gorm:"index"`
+	Age        int
+}
+
+func MigratePersonSchema(ctx context.Context, db *gorm.DB) {
+	err := db.AutoMigrate(&PersonMigration{})
+	if err != nil {
+		logger.Fatalf(ctx, "failed to migrate Person schema: %v", err)
+	}
 }

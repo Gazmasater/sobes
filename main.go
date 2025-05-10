@@ -6,10 +6,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	_ "people/docs"
 	"people/pkg/logger"
-	"time"
 
 	"people/internal/app/people"
 	"people/internal/app/people/adapters/adapterhttp"
@@ -37,9 +37,7 @@ const (
 // @host            localhost:8080
 // @BasePath        /
 func main() {
-
 	logger.SetLogger(logger.New(zapcore.DebugLevel))
-
 	ctx := logger.ToContext(context.Background(), logger.Global())
 	r := chi.NewRouter()
 
@@ -66,13 +64,14 @@ func main() {
 		log.Fatal("failed to connect to DB:", err)
 	}
 
+	// Выполняем миграцию схемы
+	people.MigratePersonSchema(ctx, db)
+
 	port_s := os.Getenv("SERVER_PORT")
 	if port_s == "" {
 		port_s = "8080"
 	}
 	logger.Debugf(ctx, "Using port: %s", port_s)
-
-	db.AutoMigrate(&people.Person{})
 
 	repo := repos.NewPersonRepository(db)
 
@@ -86,6 +85,8 @@ func main() {
 
 	handler.RegisterRoutes(r)
 
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
+
 	logger.Infof(ctx, "Starting server on port: %s", port_s)
 
 	srv := &http.Server{
@@ -96,11 +97,7 @@ func main() {
 		IdleTimeout:  idleTimeout,
 	}
 
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
-
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Fatalf(ctx, "Server failed: %v", err)
 	}
-	http.Handle("/swagger/", http.StripPrefix("/swagger/", http.FileServer(http.Dir("./docs"))))
-
 }
