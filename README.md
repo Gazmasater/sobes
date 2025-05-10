@@ -111,6 +111,11 @@ func (r *GormPersonRepository) GetPeople(ctx context.Context) ([]people.Person, 
 }
 
 
+func (h HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("GetPeople not implemented yet"))
+}
+
+
 
 
 
