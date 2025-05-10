@@ -112,10 +112,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	_ "people/docs"
 	"people/pkg/logger"
-	"time"
 
 	"people/internal/app/people"
 	"people/internal/app/people/adapters/adapterhttp"
@@ -143,9 +143,7 @@ const (
 // @host            localhost:8080
 // @BasePath        /
 func main() {
-
 	logger.SetLogger(logger.New(zapcore.DebugLevel))
-
 	ctx := logger.ToContext(context.Background(), logger.Global())
 	r := chi.NewRouter()
 
@@ -172,13 +170,14 @@ func main() {
 		log.Fatal("failed to connect to DB:", err)
 	}
 
+	// Выполняем миграцию схемы
+	people.MigratePersonSchema(ctx, db)
+
 	port_s := os.Getenv("SERVER_PORT")
 	if port_s == "" {
 		port_s = "8080"
 	}
 	logger.Debugf(ctx, "Using port: %s", port_s)
-
-	db.AutoMigrate(&people.Person{})
 
 	repo := repos.NewPersonRepository(db)
 
@@ -192,6 +191,8 @@ func main() {
 
 	handler.RegisterRoutes(r)
 
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
+
 	logger.Infof(ctx, "Starting server on port: %s", port_s)
 
 	srv := &http.Server{
@@ -202,62 +203,11 @@ func main() {
 		IdleTimeout:  idleTimeout,
 	}
 
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
-
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Fatalf(ctx, "Server failed: %v", err)
 	}
-	http.Handle("/swagger/", http.StripPrefix("/swagger/", http.FileServer(http.Dir("./docs"))))
-
 }
 
-
-package people
-
-import (
-	"context"
-	"people/pkg/logger"
-
-	"gorm.io/gorm"
-)
-
-type Person struct {
-	ID          uint
-	Name        string
-	Surname     string
-	Patronymic  string
-	Age         int
-	Gender      string
-	Nationality string
-}
-
-type Filter struct {
-	Gender      string
-	Nationality string
-	Name        string
-	Surname     string
-	Patronymic  string
-	Age         int
-	SortBy      string
-	Order       string
-	Limit       int
-	Offset      int
-}
-
-type PersonMigration struct {
-	ID         uint   `gorm:"primaryKey"`
-	Name       string `gorm:"index"`
-	Surname    string `gorm:"index"`
-	Patronymic string `gorm:"index"`
-	Age        int
-}
-
-func MigratePersonSchema(ctx context.Context, db *gorm.DB) {
-	err := db.AutoMigrate(&PersonMigration{})
-	if err != nil {
-		logger.Fatalf(ctx, "failed to migrate Person schema: %v", err)
-	}
-}
 
 
 
