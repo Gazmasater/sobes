@@ -124,7 +124,7 @@ func NewPersonRepository(db *gorm.DB) *GormPersonRepository {
 }
 
 // Create сохраняет нового человека в базу данных
-func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
+func (r *GormPersonRepository) CreatePerson(ctx context.Context, person people.Person) (people.Person, error) {
 
 	// Нормализация
 	person.Name = pkg.NormalizeName(person.Name)
@@ -167,14 +167,6 @@ func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	return nil
-}
-
-func (r *GormPersonRepository) GetByID(ctx context.Context, id int64) (people.Person, error) {
-	var person people.Person
-	if err := r.db.WithContext(ctx).First(&person, id).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
 }
 
 func (r *GormPersonRepository) Update(ctx context.Context, person people.Person) (people.Person, error) {
@@ -247,6 +239,28 @@ func (r *GormPersonRepository) GetPeople(ctx context.Context, filter people.Filt
 	}
 	return peopleList, nil
 }
+
+[{
+	"resource": "/home/gaz358/myprog/sobes/main.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "InvalidIfaceAssign",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "InvalidIfaceAssign"
+		}
+	},
+	"severity": 8,
+	"message": "cannot use repo (variable of type *repos.GormPersonRepository) as repos.PersonRepository value in argument to usecase.NewCreatePersonUseCase: *repos.GormPersonRepository does not implement repos.PersonRepository (missing method DeletePerson)",
+	"source": "compiler",
+	"startLineNumber": 79,
+	"startColumn": 45,
+	"endLineNumber": 79,
+	"endColumn": 49
+}]
 
 
 
