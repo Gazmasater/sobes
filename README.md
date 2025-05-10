@@ -91,30 +91,27 @@ curl -X POST http://localhost:8080/people \
 swag init -g cmd/main.go -o docs
 
 
-type PersonRepository interface {
-	Create(ctx context.Context, person people.Person) (people.Person, error)
-	Delete(ctx context.Context, id int64) error
-	Update(ctx context.Context, person people.Person) (people.Person, error)
-	GetByID(ctx context.Context, id int64) (people.Person, error)
+🔧 Шаг 1: Добавь метод GetPeople в интерфейс PersonUseCase:
+
+type PersonUseCase interface {
 	GetPeople(ctx context.Context) ([]people.Person, error)
-	ExistsByFullName(ctx context.Context, name, surname, patronymic string) (bool, error)
+	// другие методы...
+}
+🔧 Шаг 2: Имплементация в usecase (если у тебя уже есть personUseCase struct):
+
+type personUseCase struct {
+	repo PersonRepository
 }
 
-
-func (r *GormPersonRepository) GetPeople(ctx context.Context) ([]people.Person, error) {
-	var peopleList []people.Person
-	err := r.db.WithContext(ctx).Find(&peopleList).Error
-	if err != nil {
-		return nil, err
-	}
-	return peopleList, nil
+func (uc *personUseCase) GetPeople(ctx context.Context) ([]people.Person, error) {
+	return uc.repo.GetPeople(ctx)
 }
-
+✅ Шаг 3: Обнови хендлер:
 
 func (h HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	peopleList, err := h.repo.GetPeople(ctx)
+	peopleList, err := h.uc.GetPeople(ctx)
 	if err != nil {
 		http.Error(w, "failed to get people: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -125,12 +122,6 @@ func (h HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to encode response: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-type HTTPHandler struct {
-	svc serv.ExternalService
-
-	uc usecase.PersonUseCase
 }
 
 
