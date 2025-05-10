@@ -161,7 +161,7 @@ func (r *GormPersonRepository) CreatePerson(ctx context.Context, person people.P
 	return person, nil
 }
 
-func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
+func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error {
 
 	if err := r.db.Delete(&people.Person{}, id).Error; err != nil {
 		return err
@@ -169,7 +169,7 @@ func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (r *GormPersonRepository) Update(ctx context.Context, person people.Person) (people.Person, error) {
+func (r *GormPersonRepository) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
 	if err := r.db.WithContext(ctx).Save(&person).Error; err != nil {
 		return people.Person{}, err
 	}
@@ -240,27 +240,44 @@ func (r *GormPersonRepository) GetPeople(ctx context.Context, filter people.Filt
 	return peopleList, nil
 }
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "InvalidIfaceAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "InvalidIfaceAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use repo (variable of type *repos.GormPersonRepository) as repos.PersonRepository value in argument to usecase.NewCreatePersonUseCase: *repos.GormPersonRepository does not implement repos.PersonRepository (missing method DeletePerson)",
-	"source": "compiler",
-	"startLineNumber": 79,
-	"startColumn": 45,
-	"endLineNumber": 79,
-	"endColumn": 49
-}]
+func (h *HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := r.URL.Query()
+
+	age, _ := strconv.Atoi(params.Get("age"))
+	limit, _ := strconv.Atoi(params.Get("limit"))
+	offset, _ := strconv.Atoi(params.Get("offset"))
+	if limit == 0 {
+		limit = 10
+	}
+
+	filter := people.Filter{
+		Gender:      params.Get("gender"),
+		Nationality: params.Get("nationality"),
+		Name:        params.Get("name"),
+		Surname:     params.Get("surname"),
+		Patronymic:  params.Get("patronymic"),
+		Age:         age,
+		SortBy:      params.Get("sort_by"),
+		Order:       params.Get("order"),
+		Limit:       limit,
+		Offset:      offset,
+	}
+
+	peopleList, err := h.uc.GetPeople(ctx, filter)
+	if err != nil {
+		logger.Error(ctx, "failed to get people", "error", err)
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(peopleList); err != nil {
+		logger.Error(ctx, "failed to encode response", "error", err)
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+	}
+}
+
 
 
 
