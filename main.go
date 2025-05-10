@@ -6,19 +6,20 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
-	httpSwagger "github.com/swaggo/http-swagger"
+	//_ "people/docs"
+	"people/pkg/logger"
+	"time"
 
 	"people/internal/app/people"
 	"people/internal/app/people/adapters/adapterhttp"
 	"people/internal/app/people/repos"
 	"people/internal/app/people/usecase"
 	"people/internal/serv"
-	"people/pkg/logger"
 
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -33,7 +34,7 @@ const (
 // @title           People API
 // @version         1.0
 // @description     API for managing people.
-// @host            localhost:8080
+// @host            localhost:8081
 // @BasePath        /
 func main() {
 

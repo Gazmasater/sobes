@@ -44,7 +44,7 @@ definitions:
       surname:
         type: string
     type: object
-host: localhost:8080
+host: localhost:8081
 info:
   contact: {}
   description: API for managing people.
