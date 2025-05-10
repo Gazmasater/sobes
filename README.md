@@ -87,28 +87,9 @@ curl -X POST http://localhost:8080/people \
   }'
 
   
+go get github.com/swaggo/swag@latest
+go mod tidy
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/docs/docs.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "MissingLitField",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "MissingLitField"
-		}
-	},
-	"severity": 8,
-	"message": "unknown field LeftDelim in struct literal of type \"github.com/swaggo/swag\".Spec",
-	"source": "compiler",
-	"startLineNumber": 243,
-	"startColumn": 2,
-	"endLineNumber": 243,
-	"endColumn": 11
-}]
 
 
 
