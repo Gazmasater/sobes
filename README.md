@@ -126,5 +126,75 @@ func MigratePersonSchema(db *gorm.DB) {
 people.MigratePersonSchema(db)
 
 
+package people
+
+import (
+	"people/pkg/logger"
+
+	"gorm.io/gorm"
+)
+
+type Person struct {
+	ID          uint
+	Name        string
+	Surname     string
+	Patronymic  string
+	Age         int
+	Gender      string
+	Nationality string
+}
+
+type Filter struct {
+	Gender      string
+	Nationality string
+	Name        string
+	Surname     string
+	Patronymic  string
+	Age         int
+	SortBy      string
+	Order       string
+	Limit       int
+	Offset      int
+}
+
+type PersonMigration struct {
+	ID         uint   `gorm:"primaryKey"`
+	Name       string `gorm:"index"`
+	Surname    string `gorm:"index"`
+	Patronymic string `gorm:"index"`
+	Age        int
+}
+
+func MigratePersonSchema(db *gorm.DB) {
+
+	err := db.AutoMigrate(&PersonMigration{})
+	if err != nil {
+		logger.Fatalf(ctx, "failed to migrate Person schema: %v", err)
+	}
+}
+
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/domain.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "UndeclaredName",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "UndeclaredName"
+		}
+	},
+	"severity": 8,
+	"message": "undefined: ctx",
+	"source": "compiler",
+	"startLineNumber": 44,
+	"startColumn": 17,
+	"endLineNumber": 44,
+	"endColumn": 20
+}]
+
+
 
 
