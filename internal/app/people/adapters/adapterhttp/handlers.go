@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 type HTTPHandler_interf interface {
@@ -26,6 +27,17 @@ func NewHandler(uc usecase.PersonUseCase, svc serv.ExternalService) HTTPHandler_
 	return &HTTPHandler{uc: uc, svc: svc}
 }
 
+// CreatePerson godoc
+// @Summary      Create person
+// @Description  Creates a new person with enriched data
+// @Tags         people
+// @Accept       json
+// @Produce      json
+// @Param        person  body      CreatePersonRequest  true  "Person to create"
+// @Success      200     {object}  PersonResponse
+// @Failure      400     {string}  string  "invalid request body"
+// @Failure      500     {string}  string  "internal server error"
+// @Router       /people [post]
 func (h HTTPHandler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 	var req CreatePersonRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -59,11 +71,22 @@ func (h HTTPHandler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+// DeletePerson godoc
+// @Summary      Delete person
+// @Description  Deletes person by ID
+// @Tags         people
+// @Produce      json
+// @Param        id   path      int64  true  "Person ID"
+// @Success      204  {string}  string  "no content"
+// @Failure      400  {string}  string  "invalid id"
+// @Failure      500  {string}  string  "internal server error"
+// @Router       /people/{id} [delete]
 func (h HTTPHandler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 	// Извлекаем ID из URL
 
 	idStr := r.URL.Path[len("/people/"):]
 
+	fmt.Printf("DeletePerson URL=%s", idStr)
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "invalid id", http.StatusBadRequest)
@@ -82,6 +105,19 @@ func (h HTTPHandler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdatePerson godoc
+// @Summary      Update person
+// @Description  Updates person by ID and enriches if name changed
+// @Tags         people
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int64             true  "Person ID"
+// @Param        person  body      PersonResponse    true  "Updated person"
+// @Success      200     {object}  PersonResponse
+// @Failure      400     {string}  string  "invalid request body or id"
+// @Failure      404     {string}  string  "person not found"
+// @Failure      500     {string}  string  "failed to update person"
+// @Router       /people/{id} [put]
 func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -93,24 +129,20 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Декодируем тело запроса
 	var req PersonResponse
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Получаем текущего человека из БД
 	existing, err := h.uc.GetPersonByID(ctx, id)
 	if err != nil {
 		http.Error(w, "person not found", http.StatusNotFound)
 		return
 	}
 
-	// Проверяем, изменилось ли имя
 	nameChanged := existing.Name != req.Name
 
-	// Обновляем все поля
 	existing.Name = req.Name
 	existing.Surname = req.Surname
 	existing.Patronymic = req.Patronymic
@@ -118,46 +150,33 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	existing.Gender = req.Gender
 	existing.Nationality = req.Nationality
 
-	// Обогащаем данными, если имя изменилось
 	if nameChanged {
 		existing.Age = h.svc.GetAge(ctx, req.Name)
 		existing.Gender = h.svc.GetGender(ctx, req.Name)
 		existing.Nationality = h.svc.GetNationality(ctx, req.Name)
 	}
 
-	// Сохраняем обновления
-	updatedPerson, err := h.uc.UpdatePerson(ctx, existing)
+	updated, err := h.uc.UpdatePerson(ctx, existing)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to update person", http.StatusInternalServerError)
 		return
 	}
 
-	// Отправляем ответ
-	resp := ToResponse(updatedPerson)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(ToResponse(updated))
 }
 
 func (h *HTTPHandler) RegisterRoutes(r chi.Router) {
+
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
 	r.Post("/people", h.CreatePerson)
 	r.Delete("/people/{id}", h.DeletePerson)
 	r.Put("/people/{id}", h.UpdatePerson)
 
 }
 
-// func (h Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-// 	w.Write([]byte("DeletePerson not implemented yet"))
-
-// }
-
 func (h HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("GetPeople not implemented yet"))
 }
-
-// func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
-// 	w.Write([]byte("UpdatePerson not implemented yet"))
-// }
-
-// func (h Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-// 	w.Write([]byte("DeletePerson not implemented yet"))
-// }

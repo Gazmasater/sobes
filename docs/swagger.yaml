@@ -1,4 +1,134 @@
+basePath: /
+definitions:
+  adapterhttp.CreatePersonRequest:
+    properties:
+      name:
+        example: Dmitriy
+        type: string
+      patronymic:
+        example: Vasilevich
+        type: string
+      surname:
+        example: Ushakov
+        type: string
+    type: object
+  adapterhttp.PersonResponse:
+    properties:
+      age:
+        type: integer
+      gender:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      nationality:
+        type: string
+      patronymic:
+        type: string
+      surname:
+        type: string
+    type: object
+host: localhost:8081
 info:
   contact: {}
-paths: {}
+  description: API for managing people.
+  title: People API
+  version: "1.0"
+paths:
+  /people:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new person with enriched data
+      parameters:
+      - description: Person to create
+        in: body
+        name: person
+        required: true
+        schema:
+          $ref: '#/definitions/adapterhttp.CreatePersonRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/adapterhttp.PersonResponse'
+        "400":
+          description: invalid request body
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      summary: Create person
+      tags:
+      - people
+  /people/{id}:
+    delete:
+      description: Deletes person by ID
+      parameters:
+      - description: Person ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: no content
+          schema:
+            type: string
+        "400":
+          description: invalid id
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      summary: Delete person
+      tags:
+      - people
+    put:
+      consumes:
+      - application/json
+      description: Updates person by ID and enriches if name changed
+      parameters:
+      - description: Person ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated person
+        in: body
+        name: person
+        required: true
+        schema:
+          $ref: '#/definitions/adapterhttp.PersonResponse'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/adapterhttp.PersonResponse'
+        "400":
+          description: invalid request body or id
+          schema:
+            type: string
+        "404":
+          description: person not found
+          schema:
+            type: string
+        "500":
+          description: failed to update person
+          schema:
+            type: string
+      summary: Update person
+      tags:
+      - people
 swagger: "2.0"
