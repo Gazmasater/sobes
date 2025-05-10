@@ -108,12 +108,41 @@ package repos
 
 import (
 	"context"
-	"sobes/internal/app/people"
+	"people/internal/app/people"
 )
 
-type PersonRepository interface {
+
+
+type PersonUseCase interface {
+	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
+	DeletePerson(ctx context.Context, id int64) error
+	UpdatePerson(ctx context.Context, person people.Person) (people.Person, error)
+	GetPersonByID(ctx context.Context, id int64) (people.Person, error)
+	GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error)
 	GetPeopleWithFilter(ctx context.Context, filter people.Filter) ([]people.Person, error)
-	// + любые другие методы
 }
+
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "UndeclaredImportedName",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "UndeclaredImportedName"
+		}
+	},
+	"severity": 8,
+	"message": "undefined: repos.PersonRepository",
+	"source": "compiler",
+	"startLineNumber": 10,
+	"startColumn": 13,
+	"endLineNumber": 10,
+	"endColumn": 29
+}]
+
 
 
