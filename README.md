@@ -102,181 +102,25 @@ curl -X POST http://localhost:8080/people \
 swag init -g cmd/main.go -o docs
 
 
-package repos
-
-import (
-	"context"
-	"fmt"
-	"people/internal/app/people"
-	"people/pkg"
-
-	"gorm.io/gorm"
-)
-
-// GormPersonRepository реализация PersonRepository через GORM
-type GormPersonRepository struct {
-	db *gorm.DB
-}
-
-// NewPersonRepository создаёт новый GormPersonRepository
-func NewPersonRepository(db *gorm.DB) *GormPersonRepository {
-	return &GormPersonRepository{db: db}
-}
-
-// Create сохраняет нового человека в базу данных
-func (r *GormPersonRepository) CreatePerson(ctx context.Context, person people.Person) (people.Person, error) {
-
-	// Нормализация
-	person.Name = pkg.NormalizeName(person.Name)
-	person.Surname = pkg.NormalizeName(person.Surname)
-	person.Patronymic = pkg.NormalizeName(person.Patronymic)
-
-	// Валидация имени и фамилии (обязательны)
-	if !pkg.IsValidName(person.Name) || !pkg.IsValidName(person.Surname) {
-		return people.Person{}, fmt.Errorf("invalid name or surname format")
-	}
-
-	// Отчество — необязательно, но если есть — проверим
-	if len(person.Patronymic) > 0 && !pkg.IsValidName(person.Patronymic) {
-		return people.Person{}, fmt.Errorf("invalid patronymic format")
-	}
-
-	// Проверка на уникальность
-	var existing people.Person
-	err := r.db.WithContext(ctx).
-		Where("name = ? AND surname = ? AND patronymic = ?", person.Name, person.Surname, person.Patronymic).
-		First(&existing).Error
-
-	if err == nil {
-		return people.Person{}, fmt.Errorf("person already exists")
-	}
-	if err != gorm.ErrRecordNotFound {
-		return people.Person{}, err
-	}
-
-	// Добавление
-	if err := r.db.Create(&person).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-}
-
-func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error {
-
-	if err := r.db.Delete(&people.Person{}, id).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *GormPersonRepository) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
-	if err := r.db.WithContext(ctx).Save(&person).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-}
-
-func (r *GormPersonRepository) ExistsByFullName(ctx context.Context, name, surname, patronymic string) (bool, error) {
-	var count int64
-	err := r.db.WithContext(ctx).Model(&people.Person{}).
-		Where("name = ? AND surname = ? AND patronymic = ?", name, surname, patronymic).
-		Count(&count).Error
-	return count > 0, err
-}
-
-func (r *GormPersonRepository) GetPersonByID(ctx context.Context, id int64) (people.Person, error) {
-	var person people.Person
-	if err := r.db.WithContext(ctx).First(&person, id).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-}
-
-func (r *GormPersonRepository) GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error) {
-	var peopleList []people.Person
-	query := r.db.WithContext(ctx)
-
-	if filter.Gender != "" {
-		query = query.Where("gender = ?", filter.Gender)
-	}
-	if filter.Nationality != "" {
-		query = query.Where("nationality = ?", filter.Nationality)
-	}
-	if filter.Name != "" {
-		query = query.Where("name ILIKE ?", "%"+filter.Name+"%")
-	}
-	if filter.Surname != "" {
-		query = query.Where("surname ILIKE ?", "%"+filter.Surname+"%")
-	}
-	if filter.Patronymic != "" {
-		query = query.Where("patronymic ILIKE ?", "%"+filter.Patronymic+"%")
-	}
-	if filter.Age > 0 {
-		query = query.Where("age = ?", filter.Age)
-	}
-
-	if filter.SortBy != "" {
-		order := "asc"
-		if filter.Order == "desc" {
-			order = "desc"
-		}
-		allowed := map[string]bool{
-			"id": true, "name": true, "surname": true,
-			"patronymic": true, "age": true, "gender": true, "nationality": true,
-		}
-		if allowed[filter.SortBy] {
-			query = query.Order(filter.SortBy + " " + order)
-		}
-	}
-
-	if filter.Limit == 0 {
-		filter.Limit = 10
-	}
-	query = query.Limit(filter.Limit).Offset(filter.Offset)
-
-	if err := query.Find(&peopleList).Error; err != nil {
-		return nil, err
-	}
-	return peopleList, nil
-}
-
-func (h *HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	params := r.URL.Query()
-
-	age, _ := strconv.Atoi(params.Get("age"))
-	limit, _ := strconv.Atoi(params.Get("limit"))
-	offset, _ := strconv.Atoi(params.Get("offset"))
-	if limit == 0 {
-		limit = 10
-	}
-
-	filter := people.Filter{
-		Gender:      params.Get("gender"),
-		Nationality: params.Get("nationality"),
-		Name:        params.Get("name"),
-		Surname:     params.Get("surname"),
-		Patronymic:  params.Get("patronymic"),
-		Age:         age,
-		SortBy:      params.Get("sort_by"),
-		Order:       params.Get("order"),
-		Limit:       limit,
-		Offset:      offset,
-	}
-
-	peopleList, err := h.uc.GetPeople(ctx, filter)
-	if err != nil {
-		logger.Error(ctx, "failed to get people", "error", err)
-		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(peopleList); err != nil {
-		logger.Error(ctx, "failed to encode response", "error", err)
-		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
-	}
-}
+// GetPeople godoc
+// @Summary      Получить список людей
+// @Description  Возвращает список людей с фильтрацией, сортировкой и пагинацией
+// @Tags         people
+// @Accept       json
+// @Produce      json
+// @Param        gender       query     string  false  "Пол"
+// @Param        nationality  query     string  false  "Национальность"
+// @Param        name         query     string  false  "Имя (поиск по подстроке)"
+// @Param        surname      query     string  false  "Фамилия (поиск по подстроке)"
+// @Param        patronymic   query     string  false  "Отчество (поиск по подстроке)"
+// @Param        age          query     int     false  "Возраст (точное совпадение)"
+// @Param        sort_by      query     string  false  "Поле сортировки (id, name, surname, patronymic, age, gender, nationality)"
+// @Param        order        query     string  false  "Направление сортировки (asc, desc)"
+// @Param        limit        query     int     false  "Количество записей (по умолчанию 10)"
+// @Param        offset       query     int     false  "Смещение (для пагинации)"
+// @Success      200  {array}   people.Person
+// @Failure      500  {object}  map[string]string
+// @Router       /people [get]
 
 
 
