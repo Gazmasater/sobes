@@ -104,148 +104,16 @@ swag init -g cmd/main.go -o docs
 
 
 
-🔸 1. Repository Layer (repos/person_repository.go):
+package repos
 
-func (r *GormPersonRepository) GetPeopleWithFilter(
-	ctx context.Context,
-	filter people.Filter,
-) ([]people.Person, error) {
-	var peopleList []people.Person
-	query := r.db.WithContext(ctx)
+import (
+	"context"
+	"sobes/internal/app/people"
+)
 
-	// Фильтрация
-	if filter.Gender != "" {
-		query = query.Where("gender = ?", filter.Gender)
-	}
-	if filter.Nationality != "" {
-		query = query.Where("nationality = ?", filter.Nationality)
-	}
-	if filter.Name != "" {
-		query = query.Where("name ILIKE ?", "%"+filter.Name+"%")
-	}
-	if filter.Surname != "" {
-		query = query.Where("surname ILIKE ?", "%"+filter.Surname+"%")
-	}
-	if filter.Patronymic != "" {
-		query = query.Where("patronymic ILIKE ?", "%"+filter.Patronymic+"%")
-	}
-	if filter.Age != 0 {
-		query = query.Where("age = ?", filter.Age)
-	}
-
-	// Сортировка
-	if filter.SortBy != "" {
-		order := "asc"
-		if filter.Order == "desc" {
-			order = "desc"
-		}
-		allowed := map[string]bool{
-			"id": true, "name": true, "surname": true,
-			"patronymic": true, "age": true, "gender": true, "nationality": true,
-		}
-		if allowed[filter.SortBy] {
-			query = query.Order(filter.SortBy + " " + order)
-		}
-	}
-
-	query = query.Limit(filter.Limit).Offset(filter.Offset)
-
-	if err := query.Find(&peopleList).Error; err != nil {
-		return nil, err
-	}
-	return peopleList, nil
-}
-🔸 2. Usecase Layer (usecase/person_usecase.go):
-Добавим GetPeople с фильтрами:
-
-
-func (uc *PersonUseCaseImpl) GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error) {
-	return uc.CreatePersonUseCase.Repo.GetPeopleWithFilter(ctx, filter)
-}
-Интерфейс тоже нужно изменить:
-
-
-type PersonUseCase interface {
-	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
-	DeletePerson(ctx context.Context, id int64) error
-	UpdatePerson(ctx context.Context, person people.Person) (people.Person, error)
-	GetPersonByID(ctx context.Context, id int64) (people.Person, error)
-	GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error)
-}
-🔸 3. Модель фильтра (people/filter.go):
-
-
-type Filter struct {
-	Gender      string
-	Nationality string
-	Name        string
-	Surname     string
-	Patronymic  string
-	Age         int
-	SortBy      string
-	Order       string
-	Limit       int
-	Offset      int
-}
-🔸 4. HTTP Handler Layer (handler/people.go):
-
-func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	params := r.URL.Query()
-
-	age, _ := strconv.Atoi(params.Get("age"))
-	limit, _ := strconv.Atoi(params.Get("limit"))
-	offset, _ := strconv.Atoi(params.Get("offset"))
-	if limit == 0 {
-		limit = 10
-	}
-
-	filter := people.Filter{
-		Gender:      params.Get("gender"),
-		Nationality: params.Get("nationality"),
-		Name:        params.Get("name"),
-		Surname:     params.Get("surname"),
-		Patronymic:  params.Get("patronymic"),
-		Age:         age,
-		SortBy:      params.Get("sort_by"),
-		Order:       params.Get("order"),
-		Limit:       limit,
-		Offset:      offset,
-	}
-
-	peopleList, err := h.uc.GetPeople(ctx, filter)
-	if err != nil {
-		logger.Error(ctx, "failed to get people", "error", err)
-		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(peopleList); err != nil {
-		logger.Error(ctx, "failed to encode response", "error", err)
-		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
-	}
+type PersonRepository interface {
+	GetPeopleWithFilter(ctx context.Context, filter people.Filter) ([]people.Person, error)
+	// + любые другие методы
 }
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "UndeclaredImportedName",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "UndeclaredImportedName"
-		}
-	},
-	"severity": 8,
-	"message": "undefined: repos.PersonRepository",
-	"source": "compiler",
-	"startLineNumber": 10,
-	"startColumn": 13,
-	"endLineNumber": 10,
-	"endColumn": 29
-}]
 
