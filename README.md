@@ -88,6 +88,19 @@ curl -X POST http://localhost:8080/people \
 
   
 
+// UpdatePerson godoc
+// @Summary      Update person
+// @Description  Updates person by ID and enriches if name changed
+// @Tags         people
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int64             true  "Person ID"
+// @Param        person  body      PersonResponse    true  "Updated person"
+// @Success      200     {object}  PersonResponse
+// @Failure      400     {string}  string  "invalid request body or id"
+// @Failure      404     {string}  string  "person not found"
+// @Failure      500     {string}  string  "failed to update person"
+// @Router       /people/{id} [put]
 func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
