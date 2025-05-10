@@ -88,15 +88,6 @@ curl -X POST http://localhost:8080/people \
 
   
 
-type UpdatePersonRequest struct {
-	Name        *string `json:"name,omitempty"`
-	Surname     *string `json:"surname,omitempty"`
-	Patronymic  *string `json:"patronymic,omitempty"`
-	Age         *int    `json:"age,omitempty"`
-	Gender      *string `json:"gender,omitempty"`
-	Nationality *string `json:"nationality,omitempty"`
-}
-
 func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -159,7 +150,6 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ToResponse(updated))
 }
-
 
 
 
