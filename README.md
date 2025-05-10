@@ -91,70 +91,33 @@ curl -X POST http://localhost:8080/people \
 swag init -g cmd/main.go -o docs
 
 
-🔧 Шаг 1: Добавь метод GetPeople в интерфейс PersonUseCase:
+
+
+package usecase
+
+import (
+	"context"
+	"people/internal/app/people"
+)
 
 type PersonUseCase interface {
 	GetPeople(ctx context.Context) ([]people.Person, error)
 	// другие методы...
 }
-🔧 Шаг 2: Имплементация в usecase (если у тебя уже есть personUseCase struct):
 
-type personUseCase struct {
-	repo PersonRepository
+
+package usecase
+
+import (
+	"context"
+	"people/internal/app/people"
+)
+
+type PersonUseCaseImpl struct {
+	repo people.PersonRepository
 }
 
-func (uc *personUseCase) GetPeople(ctx context.Context) ([]people.Person, error) {
-	return uc.repo.GetPeople(ctx)
+func (u *PersonUseCaseImpl) GetPeople(ctx context.Context) ([]people.Person, error) {
+	return u.repo.GetPeople(ctx)
 }
-✅ Шаг 3: Обнови хендлер:
-
-func (h HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	peopleList, err := h.uc.GetPeople(ctx)
-	if err != nil {
-		http.Error(w, "failed to get people: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(peopleList); err != nil {
-		http.Error(w, "failed to encode response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "InvalidIfaceAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "InvalidIfaceAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use personUC (variable of type *usecase.PersonUseCaseImpl) as usecase.PersonUseCase value in argument to adapterhttp.NewHandler: *usecase.PersonUseCaseImpl does not implement usecase.PersonUseCase (missing method GetPeople)",
-	"source": "compiler",
-	"startLineNumber": 85,
-	"startColumn": 36,
-	"endLineNumber": 85,
-	"endColumn": 44
-}]
-
-
-
-
-
-
-
-
-
-
-
 
