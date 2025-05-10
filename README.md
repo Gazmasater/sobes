@@ -173,5 +173,9 @@ func MigratePersonSchema(ctx context.Context, db *gorm.DB) {
 }
 
 
+	people.MigratePersonSchema(ctx, database)
+
+
+
 
 
