@@ -88,9 +88,78 @@ curl -X POST http://localhost:8080/people \
 
   
 
-import _ "people/docs" // для инициализации swag
+type UpdatePersonRequest struct {
+	Name        *string `json:"name,omitempty"`
+	Surname     *string `json:"surname,omitempty"`
+	Patronymic  *string `json:"patronymic,omitempty"`
+	Age         *int    `json:"age,omitempty"`
+	Gender      *string `json:"gender,omitempty"`
+	Nationality *string `json:"nationality,omitempty"`
+}
 
-http.Handle("/swagger/", http.StripPrefix("/swagger/", http.FileServer(http.Dir("./docs"))))
+func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Получаем ID из URL
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	// Декодируем JSON-тело запроса
+	var req UpdatePersonRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Получаем существующего человека
+	existing, err := h.uc.GetPersonByID(ctx, id)
+	if err != nil {
+		http.Error(w, "person not found", http.StatusNotFound)
+		return
+	}
+
+	// Проверяем и обновляем только переданные поля
+	if req.Name != nil {
+		nameChanged := existing.Name != *req.Name
+		existing.Name = *req.Name
+		if nameChanged {
+			existing.Age = h.svc.GetAge(ctx, *req.Name)
+			existing.Gender = h.svc.GetGender(ctx, *req.Name)
+			existing.Nationality = h.svc.GetNationality(ctx, *req.Name)
+		}
+	}
+	if req.Surname != nil {
+		existing.Surname = *req.Surname
+	}
+	if req.Patronymic != nil {
+		existing.Patronymic = *req.Patronymic
+	}
+	if req.Age != nil {
+		existing.Age = *req.Age
+	}
+	if req.Gender != nil {
+		existing.Gender = *req.Gender
+	}
+	if req.Nationality != nil {
+		existing.Nationality = *req.Nationality
+	}
+
+	// Обновляем запись
+	updated, err := h.uc.UpdatePerson(ctx, existing)
+	if err != nil {
+		http.Error(w, "failed to update person", http.StatusInternalServerError)
+		return
+	}
+
+	// Отправляем ответ
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ToResponse(updated))
+}
+
 
 
 
