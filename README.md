@@ -87,15 +87,8 @@ curl -X POST http://localhost:8080/people \
   }'
 
   
-gaz358@gaz358-BOD-WXX9:~/myprog/sobes/cmd$ go run .
-{"lvl":"debug","ts":"2025-05-10T18:30:43.147+0300","msg":"Successfully loaded .env file"}
-{"lvl":"debug","ts":"2025-05-10T18:30:43.155+0300","msg":"Using port: 8081"}
-{"lvl":"info","ts":"2025-05-10T18:30:43.252+0300","msg":"Starting server on port: 8081"}
-2025/05/10 18:30:47 "GET http://localhost:8081/swagger/index.html HTTP/1.1" from 127.0.0.1:54304 - 200 3373B in 613.675µs
-2025/05/10 18:30:47 "GET http://localhost:8081/swagger/swagger-ui.css HTTP/1.1" from 127.0.0.1:54304 - 200 143980B in 525.731µs
-2025/05/10 18:30:47 "GET http://localhost:8081/swagger/swagger-ui-bundle.js HTTP/1.1" from 127.0.0.1:54310 - 200 1095116B in 890.541µs
-2025/05/10 18:30:47 "GET http://localhost:8081/swagger/swagger-ui-standalone-preset.js HTTP/1.1" from 127.0.0.1:54304 - 200 339540B in 492.562µs
-2025/05/10 18:30:47 "GET http://localhost:8081/swagger/doc.json HTTP/1.1" from 127.0.0.1:54310 - 500 22B in 23.143µs
+swag init -g cmd/main.go -o docs
+
 
 
 
