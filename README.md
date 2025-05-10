@@ -117,6 +117,28 @@ type PersonRepository interface {
 	ExistsByFullName(ctx context.Context, name, surname, patronymic string) (bool, error)
 }
 
+[{
+	"resource": "/home/gaz358/myprog/sobes/main.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "InvalidIfaceAssign",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "InvalidIfaceAssign"
+		}
+	},
+	"severity": 8,
+	"message": "cannot use repo (variable of type *repos.GormPersonRepository) as repos.PersonRepository value in argument to usecase.NewCreatePersonUseCase: *repos.GormPersonRepository does not implement repos.PersonRepository (missing method CreatePerson)",
+	"source": "compiler",
+	"startLineNumber": 79,
+	"startColumn": 45,
+	"endLineNumber": 79,
+	"endColumn": 49
+}]
+
 
 
 
