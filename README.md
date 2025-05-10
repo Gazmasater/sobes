@@ -158,5 +158,3 @@ func (h HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
 
 
 
-
-
