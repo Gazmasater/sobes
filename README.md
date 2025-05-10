@@ -73,32 +73,76 @@ curl -X POST http://localhost:8080/people \
   }'
 
   curl -X DELETE "http://localhost:8080/people/26"
+
+
+  curl -X PUT http://localhost:8080/people/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Alexey",
+    "surname": "Ivanov",
+    "patronymic": "Sergeevich",
+    "age": 30,
+    "gender": "male",
+    "nationality": "ru"
+  }'
+
   
 
 
 
-func (h HTTPHandler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	// Извлекаем ID из URL
+func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
-	idStr := r.URL.Path[len("/people/"):]
-
-	id, err := strconv.Atoi(idStr)
+	// Получаем ID из URL
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		http.Error(w, "invalid id", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Printf("Deleting person with ID: %d\n", id)
-
-	// Вызываем UseCase для удаления
-	err = h.uc.DeletePerson(r.Context(), int64(id))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	// Декодируем тело запроса
+	var req CreatePersonRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
-}
+	// Получаем текущие данные из базы
+	existing, err := h.uc.GetPersonByID(ctx, id)
+	if err != nil {
+		http.Error(w, "person not found", http.StatusNotFound)
+		return
+	}
 
+	// Проверяем, изменилось ли имя
+	nameChanged := existing.Name != req.Name
+
+	// Обновляем все поля
+	existing.Name = req.Name
+	existing.Surname = req.Surname
+	existing.Patronymic = req.Patronymic
+	existing.Age = req.Age
+	existing.Gender = req.Gender
+	existing.Nationality = req.Nationality
+
+	// При изменении имени — обогащаем данными
+	if nameChanged {
+		existing.Age = h.svc.GetAge(ctx, req.Name)
+		existing.Gender = h.svc.GetGender(ctx, req.Name)
+		existing.Nationality = h.svc.GetNationality(ctx, req.Name)
+	}
+
+	// Сохраняем изменения
+	updated, err := h.uc.UpdatePerson(ctx, existing)
+	if err != nil {
+		http.Error(w, "failed to update person", http.StatusInternalServerError)
+		return
+	}
+
+	// Ответ
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ToResponse(updated))
+}
 
 
