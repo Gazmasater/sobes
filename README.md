@@ -127,6 +127,13 @@ func (h HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type HTTPHandler struct {
+	svc serv.ExternalService
+
+	uc usecase.PersonUseCase
+}
+
+
 
 
 
