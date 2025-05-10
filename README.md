@@ -101,43 +101,74 @@ curl -X POST http://localhost:8080/people \
   
 swag init -g cmd/main.go -o docs
 
+
 package repos
 
 import (
 	"context"
-	"people/internal/app/people"
+
+	"gorm.io/gorm"
+	"your_project_path/people" // замените на актуальный путь
 )
 
-type PersonRepository interface {
-	CreatePerson(ctx context.Context, person people.Person) (people.Person, error)
-	DeletePerson(ctx context.Context, id int64) error
-	GetPersonByID(ctx context.Context, id int64) (people.Person, error)
-	UpdatePerson(ctx context.Context, person people.Person) (people.Person, error)
-	GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error)
-	ExistsByFullName(ctx context.Context, name, surname, patronymic string) (bool, error)
+type GormPersonRepository struct {
+	db *gorm.DB
 }
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/main.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "InvalidIfaceAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "InvalidIfaceAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use repo (variable of type *repos.GormPersonRepository) as repos.PersonRepository value in argument to usecase.NewCreatePersonUseCase: *repos.GormPersonRepository does not implement repos.PersonRepository (missing method CreatePerson)",
-	"source": "compiler",
-	"startLineNumber": 79,
-	"startColumn": 45,
-	"endLineNumber": 79,
-	"endColumn": 49
-}]
+func NewGormPersonRepository(db *gorm.DB) *GormPersonRepository {
+	return &GormPersonRepository{db: db}
+}
+
+func (r *GormPersonRepository) CreatePerson(ctx context.Context, person people.Person) (people.Person, error) {
+	if err := r.db.WithContext(ctx).Create(&person).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+}
+
+func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error {
+	return r.db.WithContext(ctx).Delete(&people.Person{}, id).Error
+}
+
+func (r *GormPersonRepository) GetPersonByID(ctx context.Context, id int64) (people.Person, error) {
+	var person people.Person
+	err := r.db.WithContext(ctx).First(&person, id).Error
+	return person, err
+}
+
+func (r *GormPersonRepository) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
+	err := r.db.WithContext(ctx).Save(&person).Error
+	return person, err
+}
+
+func (r *GormPersonRepository) GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error) {
+	var peopleList []people.Person
+	query := r.db.WithContext(ctx).Model(&people.Person{})
+
+	// пример простой фильтрации
+	if filter.Name != "" {
+		query = query.Where("name ILIKE ?", "%"+filter.Name+"%")
+	}
+	if filter.Surname != "" {
+		query = query.Where("surname ILIKE ?", "%"+filter.Surname+"%")
+	}
+	if filter.Patronymic != "" {
+		query = query.Where("patronymic ILIKE ?", "%"+filter.Patronymic+"%")
+	}
+
+	err := query.Find(&peopleList).Error
+	return peopleList, err
+}
+
+func (r *GormPersonRepository) ExistsByFullName(ctx context.Context, name, surname, patronymic string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&people.Person{}).
+		Where("name = ? AND surname = ? AND patronymic = ?", name, surname, patronymic).
+		Count(&count).Error
+	return count > 0, err
+}
+
 
 
 
