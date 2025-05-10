@@ -43,6 +43,13 @@ curl -X PUT http://localhost:8080/people/1 \
 
   curl -X GET http://localhost:8080/people
 
+  gaz358@gaz358-BOD-WXX9:~/myprog/sobes$ go run .
+{"lvl":"debug","ts":"2025-05-10T22:02:20.961+0300","msg":"Successfully loaded .env file"}
+{"lvl":"debug","ts":"2025-05-10T22:02:20.965+0300","msg":"Using port: 8080"}
+{"lvl":"info","ts":"2025-05-10T22:02:21.008+0300","msg":"Starting server on port: 8080"}
+2025/05/10 22:02:42 "GET http://localhost:8080/people/3 HTTP/1.1" from [::1]:59528 - 405 0B in 47.854µs
+
+
 
 
 
