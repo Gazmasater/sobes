@@ -112,8 +112,21 @@ func (r *GormPersonRepository) GetPeople(ctx context.Context) ([]people.Person, 
 
 
 func (h HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("GetPeople not implemented yet"))
+	ctx := r.Context()
+
+	peopleList, err := h.repo.GetPeople(ctx)
+	if err != nil {
+		http.Error(w, "failed to get people: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(peopleList); err != nil {
+		http.Error(w, "failed to encode response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
+
 
 
 
