@@ -44,6 +44,23 @@ definitions:
       surname:
         type: string
     type: object
+  people.Person:
+    properties:
+      age:
+        type: integer
+      gender:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      nationality:
+        type: string
+      patronymic:
+        type: string
+      surname:
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -52,6 +69,70 @@ info:
   version: "1.0"
 paths:
   /people:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список людей с фильтрацией, сортировкой и пагинацией
+      parameters:
+      - description: Пол
+        in: query
+        name: gender
+        type: string
+      - description: Национальность
+        in: query
+        name: nationality
+        type: string
+      - description: Имя (поиск по подстроке)
+        in: query
+        name: name
+        type: string
+      - description: Фамилия (поиск по подстроке)
+        in: query
+        name: surname
+        type: string
+      - description: Отчество (поиск по подстроке)
+        in: query
+        name: patronymic
+        type: string
+      - description: Возраст (точное совпадение)
+        in: query
+        name: age
+        type: integer
+      - description: Поле сортировки (id, name, surname, patronymic, age, gender,
+          nationality)
+        in: query
+        name: sort_by
+        type: string
+      - description: Направление сортировки (asc, desc)
+        in: query
+        name: order
+        type: string
+      - description: Количество записей (по умолчанию 10)
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение (для пагинации)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/people.Person'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить список людей
+      tags:
+      - people
     post:
       consumes:
       - application/json

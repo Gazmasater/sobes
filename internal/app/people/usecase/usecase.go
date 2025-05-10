@@ -28,7 +28,7 @@ type PersonUseCase interface {
 	UpdatePerson(ctx context.Context, person people.Person) (people.Person, error)
 	GetPersonByID(ctx context.Context, id int64) (people.Person, error)
 
-	GetPeople(ctx context.Context) ([]people.Person, error)
+	GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error)
 }
 
 func NewPersonUseCase(
@@ -46,7 +46,7 @@ func NewCreatePersonUseCase(repo repos.PersonRepository) *CreatePersonUseCase {
 }
 
 func (uc *CreatePersonUseCase) Execute(ctx context.Context, person people.Person) (people.Person, error) {
-	return uc.Repo.Create(ctx, person)
+	return uc.Repo.CreatePerson(ctx, person)
 }
 
 func NewDeletePersonUseCase(repo repos.PersonRepository) *DeletePersonUseCase {
@@ -54,7 +54,7 @@ func NewDeletePersonUseCase(repo repos.PersonRepository) *DeletePersonUseCase {
 }
 
 func (uc *DeletePersonUseCase) Execute(ctx context.Context, id int64) error {
-	return uc.Repo.Delete(ctx, id)
+	return uc.Repo.DeletePerson(ctx, id)
 }
 
 func (uc *PersonUseCaseImpl) CreatePerson(ctx context.Context, req people.Person) (people.Person, error) {
@@ -66,13 +66,13 @@ func (uc *PersonUseCaseImpl) DeletePerson(ctx context.Context, id int64) error {
 }
 
 func (uc *PersonUseCaseImpl) GetPersonByID(ctx context.Context, id int64) (people.Person, error) {
-	return uc.CreatePersonUseCase.Repo.GetByID(ctx, id)
+	return uc.CreatePersonUseCase.Repo.GetPersonByID(ctx, id)
 }
 
 func (uc *PersonUseCaseImpl) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
-	return uc.CreatePersonUseCase.Repo.Update(ctx, person)
+	return uc.CreatePersonUseCase.Repo.UpdatePerson(ctx, person)
 }
 
-func (uc *PersonUseCaseImpl) GetPeople(ctx context.Context) ([]people.Person, error) {
-	return uc.CreatePersonUseCase.Repo.GetPeople(ctx)
+func (uc *PersonUseCaseImpl) GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error) {
+	return uc.CreatePersonUseCase.Repo.GetPeople(ctx, filter)
 }

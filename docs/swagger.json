@@ -10,6 +10,101 @@
     "basePath": "/",
     "paths": {
         "/people": {
+            "get": {
+                "description": "Возвращает список людей с фильтрацией, сортировкой и пагинацией",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "people"
+                ],
+                "summary": "Получить список людей",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Пол",
+                        "name": "gender",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Национальность",
+                        "name": "nationality",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Имя (поиск по подстроке)",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Фамилия (поиск по подстроке)",
+                        "name": "surname",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Отчество (поиск по подстроке)",
+                        "name": "patronymic",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Возраст (точное совпадение)",
+                        "name": "age",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Поле сортировки (id, name, surname, patronymic, age, gender, nationality)",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Направление сортировки (asc, desc)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество записей (по умолчанию 10)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение (для пагинации)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/people.Person"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Creates a new person with enriched data",
                 "consumes": [
@@ -206,6 +301,32 @@
                 },
                 "gender": {
                     "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nationality": {
+                    "type": "string"
+                },
+                "patronymic": {
+                    "type": "string"
+                },
+                "surname": {
+                    "type": "string"
+                }
+            }
+        },
+        "people.Person": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"

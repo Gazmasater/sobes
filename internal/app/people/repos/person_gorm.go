@@ -20,7 +20,7 @@ func NewPersonRepository(db *gorm.DB) *GormPersonRepository {
 }
 
 // Create сохраняет нового человека в базу данных
-func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
+func (r *GormPersonRepository) CreatePerson(ctx context.Context, person people.Person) (people.Person, error) {
 
 	// Нормализация
 	person.Name = pkg.NormalizeName(person.Name)
@@ -57,7 +57,7 @@ func (r *GormPersonRepository) Create(ctx context.Context, person people.Person)
 	return person, nil
 }
 
-func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
+func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error {
 
 	if err := r.db.Delete(&people.Person{}, id).Error; err != nil {
 		return err
@@ -65,15 +65,7 @@ func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (r *GormPersonRepository) GetByID(ctx context.Context, id int64) (people.Person, error) {
-	var person people.Person
-	if err := r.db.WithContext(ctx).First(&person, id).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-}
-
-func (r *GormPersonRepository) Update(ctx context.Context, person people.Person) (people.Person, error) {
+func (r *GormPersonRepository) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
 	if err := r.db.WithContext(ctx).Save(&person).Error; err != nil {
 		return people.Person{}, err
 	}
@@ -88,10 +80,57 @@ func (r *GormPersonRepository) ExistsByFullName(ctx context.Context, name, surna
 	return count > 0, err
 }
 
-func (r *GormPersonRepository) GetPeople(ctx context.Context) ([]people.Person, error) {
+func (r *GormPersonRepository) GetPersonByID(ctx context.Context, id int64) (people.Person, error) {
+	var person people.Person
+	if err := r.db.WithContext(ctx).First(&person, id).Error; err != nil {
+		return people.Person{}, err
+	}
+	return person, nil
+}
+
+func (r *GormPersonRepository) GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error) {
 	var peopleList []people.Person
-	err := r.db.WithContext(ctx).Find(&peopleList).Error
-	if err != nil {
+	query := r.db.WithContext(ctx)
+
+	if filter.Gender != "" {
+		query = query.Where("gender = ?", filter.Gender)
+	}
+	if filter.Nationality != "" {
+		query = query.Where("nationality = ?", filter.Nationality)
+	}
+	if filter.Name != "" {
+		query = query.Where("name ILIKE ?", "%"+filter.Name+"%")
+	}
+	if filter.Surname != "" {
+		query = query.Where("surname ILIKE ?", "%"+filter.Surname+"%")
+	}
+	if filter.Patronymic != "" {
+		query = query.Where("patronymic ILIKE ?", "%"+filter.Patronymic+"%")
+	}
+	if filter.Age > 0 {
+		query = query.Where("age = ?", filter.Age)
+	}
+
+	if filter.SortBy != "" {
+		order := "asc"
+		if filter.Order == "desc" {
+			order = "desc"
+		}
+		allowed := map[string]bool{
+			"id": true, "name": true, "surname": true,
+			"patronymic": true, "age": true, "gender": true, "nationality": true,
+		}
+		if allowed[filter.SortBy] {
+			query = query.Order(filter.SortBy + " " + order)
+		}
+	}
+
+	if filter.Limit == 0 {
+		filter.Limit = 10
+	}
+	query = query.Limit(filter.Limit).Offset(filter.Offset)
+
+	if err := query.Find(&peopleList).Error; err != nil {
 		return nil, err
 	}
 	return peopleList, nil

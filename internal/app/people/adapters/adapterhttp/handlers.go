@@ -199,18 +199,59 @@ func (h *HTTPHandler) RegisterRoutes(r chi.Router) {
 
 }
 
-func (h HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
+// GetPeople godoc
+// @Summary      Получить список людей
+// @Description  Возвращает список людей с фильтрацией, сортировкой и пагинацией
+// @Tags         people
+// @Accept       json
+// @Produce      json
+// @Param        gender       query     string  false  "Пол"
+// @Param        nationality  query     string  false  "Национальность"
+// @Param        name         query     string  false  "Имя (поиск по подстроке)"
+// @Param        surname      query     string  false  "Фамилия (поиск по подстроке)"
+// @Param        patronymic   query     string  false  "Отчество (поиск по подстроке)"
+// @Param        age          query     int     false  "Возраст (точное совпадение)"
+// @Param        sort_by      query     string  false  "Поле сортировки (id, name, surname, patronymic, age, gender, nationality)"
+// @Param        order        query     string  false  "Направление сортировки (asc, desc)"
+// @Param        limit        query     int     false  "Количество записей (по умолчанию 10)"
+// @Param        offset       query     int     false  "Смещение (для пагинации)"
+// @Success      200  {array}   people.Person
+// @Failure      500  {object}  map[string]string
+// @Router       /people [get]
+func (h *HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	params := r.URL.Query()
 
-	peopleList, err := h.uc.GetPeople(ctx)
+	age, _ := strconv.Atoi(params.Get("age"))
+	limit, _ := strconv.Atoi(params.Get("limit"))
+	offset, _ := strconv.Atoi(params.Get("offset"))
+	if limit == 0 {
+		limit = 10
+	}
+
+	filter := people.Filter{
+		Gender:      params.Get("gender"),
+		Nationality: params.Get("nationality"),
+		Name:        params.Get("name"),
+		Surname:     params.Get("surname"),
+		Patronymic:  params.Get("patronymic"),
+		Age:         age,
+		SortBy:      params.Get("sort_by"),
+		Order:       params.Get("order"),
+		Limit:       limit,
+		Offset:      offset,
+	}
+
+	peopleList, err := h.uc.GetPeople(ctx, filter)
 	if err != nil {
-		http.Error(w, "failed to get people: "+err.Error(), http.StatusInternalServerError)
+		logger.Error(ctx, "failed to get people", "error", err)
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(peopleList); err != nil {
-		http.Error(w, "failed to encode response: "+err.Error(), http.StatusInternalServerError)
-		return
+		logger.Error(ctx, "failed to encode response", "error", err)
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
 	}
 }
