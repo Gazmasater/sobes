@@ -21,7 +21,6 @@ func NewPersonRepository(db *gorm.DB) *GormPersonRepository {
 
 // Create сохраняет нового человека в базу данных
 func (r *GormPersonRepository) Create(ctx context.Context, person people.Person) (people.Person, error) {
-	fmt.Println("Create")
 
 	// Нормализация
 	person.Name = pkg.NormalizeName(person.Name)
@@ -60,8 +59,6 @@ func (r *GormPersonRepository) Create(ctx context.Context, person people.Person)
 
 func (r *GormPersonRepository) Delete(ctx context.Context, id int64) error {
 
-	fmt.Println("Delete")
-
 	if err := r.db.Delete(&people.Person{}, id).Error; err != nil {
 		return err
 	}
@@ -89,4 +86,13 @@ func (r *GormPersonRepository) ExistsByFullName(ctx context.Context, name, surna
 		Where("name = ? AND surname = ? AND patronymic = ?", name, surname, patronymic).
 		Count(&count).Error
 	return count > 0, err
+}
+
+func (r *GormPersonRepository) GetPeople(ctx context.Context) ([]people.Person, error) {
+	var peopleList []people.Person
+	err := r.db.WithContext(ctx).Find(&peopleList).Error
+	if err != nil {
+		return nil, err
+	}
+	return peopleList, nil
 }

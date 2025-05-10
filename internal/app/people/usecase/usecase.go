@@ -27,6 +27,8 @@ type PersonUseCase interface {
 
 	UpdatePerson(ctx context.Context, person people.Person) (people.Person, error)
 	GetPersonByID(ctx context.Context, id int64) (people.Person, error)
+
+	GetPeople(ctx context.Context) ([]people.Person, error)
 }
 
 func NewPersonUseCase(
@@ -69,4 +71,8 @@ func (uc *PersonUseCaseImpl) GetPersonByID(ctx context.Context, id int64) (peopl
 
 func (uc *PersonUseCaseImpl) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
 	return uc.CreatePersonUseCase.Repo.Update(ctx, person)
+}
+
+func (uc *PersonUseCaseImpl) GetPeople(ctx context.Context) ([]people.Person, error) {
+	return uc.CreatePersonUseCase.Repo.GetPeople(ctx)
 }

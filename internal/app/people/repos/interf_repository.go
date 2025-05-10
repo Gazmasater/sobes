@@ -15,5 +15,6 @@ type PersonRepository interface {
 	Delete(ctx context.Context, id int64) error
 	Update(ctx context.Context, person people.Person) (people.Person, error)
 	GetByID(ctx context.Context, id int64) (people.Person, error)
-	ExistsByFullName(ctx context.Context, name, surname, patronymic string) (bool, error) // ← вот это обязательно
+	GetPeople(ctx context.Context) ([]people.Person, error)
+	ExistsByFullName(ctx context.Context, name, surname, patronymic string) (bool, error)
 }

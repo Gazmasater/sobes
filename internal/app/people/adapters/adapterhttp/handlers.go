@@ -2,11 +2,11 @@ package adapterhttp
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"people/internal/app/people"
 	"people/internal/app/people/usecase"
 	"people/internal/serv"
+	"people/pkg/logger"
 	"strconv"
 
 	"github.com/go-chi/chi"
@@ -39,17 +39,20 @@ func NewHandler(uc usecase.PersonUseCase, svc serv.ExternalService) HTTPHandler_
 // @Failure      500     {string}  string  "internal server error"
 // @Router       /people [post]
 func (h HTTPHandler) CreatePerson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	var req CreatePersonRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Warn(ctx, "invalid request body")
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	// Получаем доп. данные
-	ctx := r.Context()
 	age := h.svc.GetAge(ctx, req.Name)
 	gender := h.svc.GetGender(ctx, req.Name)
 	nationality := h.svc.GetNationality(ctx, req.Name)
+	logger.Debug(ctx, "CreatePerson AGE=%d GENDER=%s NATION=%s", age, gender, nationality)
 
 	person := people.Person{
 		Name:        req.Name,
@@ -82,18 +85,18 @@ func (h HTTPHandler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 // @Failure      500  {string}  string  "internal server error"
 // @Router       /people/{id} [delete]
 func (h HTTPHandler) DeletePerson(w http.ResponseWriter, r *http.Request) {
-	// Извлекаем ID из URL
+	ctx := r.Context()
 
 	idStr := r.URL.Path[len("/people/"):]
 
-	fmt.Printf("DeletePerson URL=%s", idStr)
+	logger.Debug(ctx, "DeletePerson URL=%s", idStr)
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "invalid id", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Printf("Deleting person with ID: %d\n", id)
+	logger.Debug(ctx, "Deleting person with ID: %d\n", id)
 
 	// Вызываем UseCase для удаления
 	err = h.uc.DeletePerson(r.Context(), int64(id))
@@ -125,6 +128,7 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
+		logger.Warn(ctx, "invalid id")
 		http.Error(w, "invalid id", http.StatusBadRequest)
 		return
 	}
@@ -132,6 +136,7 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	// Декодируем JSON-тело запроса
 	var req UpdatePersonRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Warn(ctx, "invalid request body")
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -139,6 +144,7 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	// Получаем существующего человека
 	existing, err := h.uc.GetPersonByID(ctx, id)
 	if err != nil {
+		logger.Warn(ctx, "person not found")
 		http.Error(w, "person not found", http.StatusNotFound)
 		return
 	}
@@ -172,6 +178,7 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	// Обновляем запись
 	updated, err := h.uc.UpdatePerson(ctx, existing)
 	if err != nil {
+		logger.Warn(ctx, "failed to update person")
 		http.Error(w, "failed to update person", http.StatusInternalServerError)
 		return
 	}
@@ -188,9 +195,22 @@ func (h *HTTPHandler) RegisterRoutes(r chi.Router) {
 	r.Post("/people", h.CreatePerson)
 	r.Delete("/people/{id}", h.DeletePerson)
 	r.Put("/people/{id}", h.UpdatePerson)
+	r.Get("/people", h.GetPeople)
 
 }
 
 func (h HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("GetPeople not implemented yet"))
+	ctx := r.Context()
+
+	peopleList, err := h.uc.GetPeople(ctx)
+	if err != nil {
+		http.Error(w, "failed to get people: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(peopleList); err != nil {
+		http.Error(w, "failed to encode response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
