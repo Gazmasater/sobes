@@ -15,3 +15,12 @@ type CreatePersonRequest struct {
 	Surname    string `json:"surname" example:"Ushakov"`
 	Patronymic string `json:"patronymic,omitempty" example:"Vasilevich"`
 }
+
+type UpdatePersonRequest struct {
+	Name        *string `json:"name,omitempty"`
+	Surname     *string `json:"surname,omitempty"`
+	Patronymic  *string `json:"patronymic,omitempty"`
+	Age         *int    `json:"age,omitempty"`
+	Gender      *string `json:"gender,omitempty"`
+	Nationality *string `json:"nationality,omitempty"`
+}

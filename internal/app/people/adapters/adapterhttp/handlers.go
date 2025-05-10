@@ -111,8 +111,8 @@ func (h HTTPHandler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 // @Tags         people
 // @Accept       json
 // @Produce      json
-// @Param        id      path      int64             true  "Person ID"
-// @Param        person  body      PersonResponse    true  "Updated person"
+// @Param        id      path      int64                 true  "Person ID"
+// @Param        person  body      UpdatePersonRequest   true  "Updated person (partial)"
 // @Success      200     {object}  PersonResponse
 // @Failure      400     {string}  string  "invalid request body or id"
 // @Failure      404     {string}  string  "person not found"
@@ -129,45 +129,59 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req PersonResponse
+	// Декодируем JSON-тело запроса
+	var req UpdatePersonRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	// Получаем существующего человека
 	existing, err := h.uc.GetPersonByID(ctx, id)
 	if err != nil {
 		http.Error(w, "person not found", http.StatusNotFound)
 		return
 	}
 
-	nameChanged := existing.Name != req.Name
-
-	existing.Name = req.Name
-	existing.Surname = req.Surname
-	existing.Patronymic = req.Patronymic
-	existing.Age = req.Age
-	existing.Gender = req.Gender
-	existing.Nationality = req.Nationality
-
-	if nameChanged {
-		existing.Age = h.svc.GetAge(ctx, req.Name)
-		existing.Gender = h.svc.GetGender(ctx, req.Name)
-		existing.Nationality = h.svc.GetNationality(ctx, req.Name)
+	// Проверяем и обновляем только переданные поля
+	if req.Name != nil {
+		nameChanged := existing.Name != *req.Name
+		existing.Name = *req.Name
+		if nameChanged {
+			existing.Age = h.svc.GetAge(ctx, *req.Name)
+			existing.Gender = h.svc.GetGender(ctx, *req.Name)
+			existing.Nationality = h.svc.GetNationality(ctx, *req.Name)
+		}
+	}
+	if req.Surname != nil {
+		existing.Surname = *req.Surname
+	}
+	if req.Patronymic != nil {
+		existing.Patronymic = *req.Patronymic
+	}
+	if req.Age != nil {
+		existing.Age = *req.Age
+	}
+	if req.Gender != nil {
+		existing.Gender = *req.Gender
+	}
+	if req.Nationality != nil {
+		existing.Nationality = *req.Nationality
 	}
 
+	// Обновляем запись
 	updated, err := h.uc.UpdatePerson(ctx, existing)
 	if err != nil {
 		http.Error(w, "failed to update person", http.StatusInternalServerError)
 		return
 	}
 
+	// Отправляем ответ
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ToResponse(updated))
 }
 
 func (h *HTTPHandler) RegisterRoutes(r chi.Router) {
-
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 

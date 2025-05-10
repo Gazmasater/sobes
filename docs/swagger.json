@@ -6,7 +6,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:8081",
+    "host": "localhost:8080",
     "basePath": "/",
     "paths": {
         "/people": {
@@ -77,12 +77,12 @@
                         "required": true
                     },
                     {
-                        "description": "Updated person",
+                        "description": "Updated person (partial)",
                         "name": "person",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/adapterhttp.PersonResponse"
+                            "$ref": "#/definitions/adapterhttp.UpdatePersonRequest"
                         }
                     }
                 ],
@@ -183,6 +183,29 @@
                 },
                 "id": {
                     "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nationality": {
+                    "type": "string"
+                },
+                "patronymic": {
+                    "type": "string"
+                },
+                "surname": {
+                    "type": "string"
+                }
+            }
+        },
+        "adapterhttp.UpdatePersonRequest": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer"
+                },
+                "gender": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"

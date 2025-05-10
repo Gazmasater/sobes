@@ -83,12 +83,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Updated person",
+                        "description": "Updated person (partial)",
                         "name": "person",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/adapterhttp.PersonResponse"
+                            "$ref": "#/definitions/adapterhttp.UpdatePersonRequest"
                         }
                     }
                 ],
@@ -203,6 +203,29 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "adapterhttp.UpdatePersonRequest": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nationality": {
+                    "type": "string"
+                },
+                "patronymic": {
+                    "type": "string"
+                },
+                "surname": {
+                    "type": "string"
+                }
+            }
         }
     }
 }`
@@ -210,7 +233,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8081",
+	Host:             "localhost:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "People API",

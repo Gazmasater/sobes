@@ -29,7 +29,22 @@ definitions:
       surname:
         type: string
     type: object
-host: localhost:8081
+  adapterhttp.UpdatePersonRequest:
+    properties:
+      age:
+        type: integer
+      gender:
+        type: string
+      name:
+        type: string
+      nationality:
+        type: string
+      patronymic:
+        type: string
+      surname:
+        type: string
+    type: object
+host: localhost:8080
 info:
   contact: {}
   description: API for managing people.
@@ -103,12 +118,12 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Updated person
+      - description: Updated person (partial)
         in: body
         name: person
         required: true
         schema:
-          $ref: '#/definitions/adapterhttp.PersonResponse'
+          $ref: '#/definitions/adapterhttp.UpdatePersonRequest'
       produces:
       - application/json
       responses:
