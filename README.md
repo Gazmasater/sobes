@@ -77,66 +77,29 @@ curl -X POST http://localhost:8080/people \
 
 
 
-func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	// Получаем ID из URL
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+func (uc *PersonUseCaseImpl) UpdatePerson(ctx context.Context, updated people.Person) (people.Person, error) {
+	existing, err := uc.CreatePersonUseCase.Repo.GetByID(ctx, updated.ID)
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
-		return
+		return people.Person{}, fmt.Errorf("person not found: %w", err)
 	}
 
-	// Декодируем тело запроса
-	var req CreatePersonRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	// Получаем текущего человека из БД
-	existing, err := h.uc.GetPersonByID(ctx, id)
-	if err != nil {
-		http.Error(w, "person not found", http.StatusNotFound)
-		return
-	}
-
-	// Проверяем, изменилось ли имя
-	nameChanged := existing.Name != req.Name
+	nameChanged := existing.Name != updated.Name
 
 	// Обновляем все поля
-	existing.Name = req.Name
-	existing.Surname = req.Surname
-	existing.Patronymic = req.Patronymic
-	existing.Age = req.Age
-	existing.Gender = req.Gender
-	existing.Nationality = req.Nationality
+	existing.Name = updated.Name
+	existing.Surname = updated.Surname
+	existing.Patronymic = updated.Patronymic
+	existing.Age = updated.Age
+	existing.Gender = updated.Gender
+	existing.Nationality = updated.Nationality
 
-	// Обогащаем данными, если имя изменилось
 	if nameChanged {
-		existing.Age = h.svc.GetAge(ctx, req.Name)
-		existing.Gender = h.svc.GetGender(ctx, req.Name)
-		existing.Nationality = h.svc.GetNationality(ctx, req.Name)
+		existing.Age = uc.CreatePersonUseCase.ExtSvc.GetAge(ctx, updated.Name)
+		existing.Gender = uc.CreatePersonUseCase.ExtSvc.GetGender(ctx, updated.Name)
+		existing.Nationality = uc.CreatePersonUseCase.ExtSvc.GetNationality(ctx, updated.Name)
 	}
 
-	// Сохраняем обновления
-	updatedPerson, err := h.uc.UpdatePerson(ctx, existing)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Отправляем ответ
-	resp := ToResponse(updatedPerson)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	return uc.CreatePersonUseCase.Repo.Update(ctx, existing)
 }
 
-func (r *GormPersonRepository) Update(ctx context.Context, person people.Person) (people.Person, error) {
-	if err := r.db.WithContext(ctx).Save(&person).Error; err != nil {
-		return people.Person{}, err
-	}
-	return person, nil
-}
 
