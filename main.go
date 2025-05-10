@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	//_ "people/docs"
+	_ "people/docs"
 	"people/pkg/logger"
 	"time"
 
@@ -34,7 +34,7 @@ const (
 // @title           People API
 // @version         1.0
 // @description     API for managing people.
-// @host            localhost:8081
+// @host            localhost:8080
 // @BasePath        /
 func main() {
 
