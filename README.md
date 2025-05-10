@@ -88,29 +88,14 @@ curl -X POST http://localhost:8080/people \
 
   
 
-// UpdatePerson godoc
-// @Summary      Update person
-// @Description  Updates person by ID and enriches if name changed
-// @Tags         people
-// @Accept       json
-// @Produce      json
-// @Param        id      path      int64                 true  "Person ID"
-// @Param        person  body      UpdatePersonRequest   true  "Updated person (partial)"
-// @Success      200     {object}  PersonResponse
-// @Failure      400     {string}  string  "invalid request body or id"
-// @Failure      404     {string}  string  "person not found"
-// @Failure      500     {string}  string  "failed to update person"
-// @Router       /people/{id} [put]
+// @title           People API
+// @version         1.0
+// @description     API for managing people.
+// @host            localhost:8081
+// @BasePath        /
 
 
-type UpdatePersonRequest struct {
-	Name        *string `json:"name,omitempty"`
-	Surname     *string `json:"surname,omitempty"`
-	Patronymic  *string `json:"patronymic,omitempty"`
-	Age         *int    `json:"age,omitempty"`
-	Gender      *string `json:"gender,omitempty"`
-	Nationality *string `json:"nationality,omitempty"`
-}
+
 
 
 
