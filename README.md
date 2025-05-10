@@ -104,6 +104,32 @@ swag init -g cmd/main.go -o docs
 
 
 
+package people
+
+type Person struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Surname     string `json:"surname"`
+	Patronymic  string `json:"patronymic"`
+	Age         int    `json:"age"`
+	Gender      string `json:"gender"`
+	Nationality string `json:"nationality"`
+}
+
+type Filter struct {
+	Name        string
+	Surname     string
+	Patronymic  string
+	Age         *int
+	Gender      string
+	Nationality string
+	Limit       int
+	Offset      int
+	SortBy      string
+	Order       string
+}
+
+
 package repos
 
 import (
@@ -111,38 +137,148 @@ import (
 	"people/internal/app/people"
 )
 
-
-
-type PersonUseCase interface {
-	CreatePerson(ctx context.Context, req people.Person) (people.Person, error)
-	DeletePerson(ctx context.Context, id int64) error
-	UpdatePerson(ctx context.Context, person people.Person) (people.Person, error)
-	GetPersonByID(ctx context.Context, id int64) (people.Person, error)
+type PersonRepository interface {
 	GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error)
-	GetPeopleWithFilter(ctx context.Context, filter people.Filter) ([]people.Person, error)
 }
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/usecase/usecase.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "UndeclaredImportedName",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "UndeclaredImportedName"
+
+package usecase
+
+import (
+	"context"
+	"people/internal/app/people"
+	"people/internal/app/people/repos"
+)
+
+type GetPeopleUseCase struct {
+	Repo repos.PersonRepository
+}
+
+func NewGetPeopleUseCase(repo repos.PersonRepository) *GetPeopleUseCase {
+	return &GetPeopleUseCase{Repo: repo}
+}
+
+func (uc *GetPeopleUseCase) Execute(ctx context.Context, filter people.Filter) ([]people.Person, error) {
+	return uc.Repo.GetPeople(ctx, filter)
+}
+
+
+package handler
+
+import (
+	"encoding/json"
+	"net/http"
+	"strconv"
+
+	"people/internal/app/people"
+	"people/internal/app/people/usecase"
+)
+
+type Handler struct {
+	GetPeopleUC *usecase.GetPeopleUseCase
+}
+
+func NewHandler(getPeopleUC *usecase.GetPeopleUseCase) *Handler {
+	return &Handler{
+		GetPeopleUC: getPeopleUC,
+	}
+}
+
+func (h *Handler) GetPeople(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := r.URL.Query()
+
+	filter := people.Filter{
+		Name:        params.Get("name"),
+		Surname:     params.Get("surname"),
+		Patronymic:  params.Get("patronymic"),
+		Gender:      params.Get("gender"),
+		Nationality: params.Get("nationality"),
+		SortBy:      params.Get("sort_by"),
+		Order:       params.Get("order"),
+		Limit:       parseInt(params.Get("limit"), 10),
+		Offset:      parseInt(params.Get("offset"), 0),
+	}
+
+	if ageStr := params.Get("age"); ageStr != "" {
+		if age, err := strconv.Atoi(ageStr); err == nil {
+			filter.Age = &age
 		}
-	},
-	"severity": 8,
-	"message": "undefined: repos.PersonRepository",
-	"source": "compiler",
-	"startLineNumber": 10,
-	"startColumn": 13,
-	"endLineNumber": 10,
-	"endColumn": 29
-}]
+	}
+
+	peopleList, err := h.GetPeopleUC.Execute(ctx, filter)
+	if err != nil {
+		http.Error(w, `{"error":"internal error"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(peopleList)
+}
+
+func parseInt(val string, def int) int {
+	if val == "" {
+		return def
+	}
+	i, err := strconv.Atoi(val)
+	if err != nil {
+		return def
+	}
+	return i
+}
+
+
+package repos
+
+import (
+	"context"
+	"people/internal/app/people"
+
+	"gorm.io/gorm"
+)
+
+type GormPersonRepository struct {
+	DB *gorm.DB
+}
+
+func NewGormPersonRepository(db *gorm.DB) *GormPersonRepository {
+	return &GormPersonRepository{DB: db}
+}
+
+func (r *GormPersonRepository) GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error) {
+	query := r.DB.WithContext(ctx).Model(&people.Person{})
+
+	if filter.Name != "" {
+		query = query.Where("name ILIKE ?", "%"+filter.Name+"%")
+	}
+	if filter.Surname != "" {
+		query = query.Where("surname ILIKE ?", "%"+filter.Surname+"%")
+	}
+	if filter.Patronymic != "" {
+		query = query.Where("patronymic ILIKE ?", "%"+filter.Patronymic+"%")
+	}
+	if filter.Gender != "" {
+		query = query.Where("gender = ?", filter.Gender)
+	}
+	if filter.Nationality != "" {
+		query = query.Where("nationality = ?", filter.Nationality)
+	}
+	if filter.Age != nil {
+		query = query.Where("age = ?", *filter.Age)
+	}
+
+	if filter.SortBy != "" {
+		order := "ASC"
+		if filter.Order == "desc" {
+			order = "DESC"
+		}
+		query = query.Order(filter.SortBy + " " + order)
+	}
+
+	var peopleList []people.Person
+	err := query.Limit(filter.Limit).Offset(filter.Offset).Find(&peopleList).Error
+	return peopleList, err
+}
 
 
 
