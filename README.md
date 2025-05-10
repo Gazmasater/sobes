@@ -77,29 +77,28 @@ curl -X POST http://localhost:8080/people \
 
 
 
-func (uc *PersonUseCaseImpl) UpdatePerson(ctx context.Context, updated people.Person) (people.Person, error) {
-	existing, err := uc.CreatePersonUseCase.Repo.GetByID(ctx, updated.ID)
+func (h HTTPHandler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	// Извлекаем ID из URL
+
+	idStr := r.URL.Path[len("/people/"):]
+
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return people.Person{}, fmt.Errorf("person not found: %w", err)
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
 	}
 
-	nameChanged := existing.Name != updated.Name
+	fmt.Printf("Deleting person with ID: %d\n", id)
 
-	// Обновляем все поля
-	existing.Name = updated.Name
-	existing.Surname = updated.Surname
-	existing.Patronymic = updated.Patronymic
-	existing.Age = updated.Age
-	existing.Gender = updated.Gender
-	existing.Nationality = updated.Nationality
-
-	if nameChanged {
-		existing.Age = uc.CreatePersonUseCase.ExtSvc.GetAge(ctx, updated.Name)
-		existing.Gender = uc.CreatePersonUseCase.ExtSvc.GetGender(ctx, updated.Name)
-		existing.Nationality = uc.CreatePersonUseCase.ExtSvc.GetNationality(ctx, updated.Name)
+	// Вызываем UseCase для удаления
+	err = h.uc.DeletePerson(r.Context(), int64(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	return uc.CreatePersonUseCase.Repo.Update(ctx, existing)
+	w.WriteHeader(http.StatusNoContent)
 }
+
 
 
