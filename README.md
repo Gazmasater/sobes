@@ -133,83 +133,11 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
-// UpdatePerson godoc
-// @Summary      Update person
-// @Description  Updates person by ID and enriches if name changed
-// @Tags         people
-// @Accept       json
-// @Produce      json
-// @Param        id      path      int64                 true  "Person ID"
-// @Param        person  body      UpdatePersonRequest   true  "Updated person (partial)"
-// @Success      200     {object}  PersonResponse
-// @Failure      400     {string}  string  "invalid request body or id"
-// @Failure      404     {string}  string  "person not found"
-// @Failure      500     {string}  string  "failed to update person"
-// @Router       /people/{id} [put]
-func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	idStr := chi.URLParam(r, "id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		logger.Warn(ctx, "invalid id")
-		http.Error(w, "invalid id", http.StatusBadRequest)
-		return
-	}
-
-	var req UpdatePersonRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Warn(ctx, "invalid request body")
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	existing, err := h.uc.GetPersonByID(ctx, id)
-	if err != nil {
-		logger.Warn(ctx, "person not found")
-		http.Error(w, "person not found", http.StatusNotFound)
-		return
-	}
-
-	if req.Name != nil {
-		nameChanged := existing.Name != *req.Name
-		existing.Name = *req.Name
-		if nameChanged {
-			existing.Age = h.svc.GetAge(ctx, *req.Name)
-			existing.Gender = h.svc.GetGender(ctx, *req.Name)
-			existing.Nationality = h.svc.GetNationality(ctx, *req.Name)
-		}
-	}
-	if req.Surname != nil {
-		existing.Surname = *req.Surname
-	}
-	if req.Patronymic != nil {
-		existing.Patronymic = *req.Patronymic
-	}
-	if req.Age != nil {
-		existing.Age = *req.Age
-	}
-	if req.Gender != nil {
-		existing.Gender = *req.Gender
-	}
-	if req.Nationality != nil {
-		existing.Nationality = *req.Nationality
-	}
-
-	// Обновляем запись
-	updated, err := h.uc.UpdatePerson(ctx, existing)
-	if err != nil {
-		logger.Warn(ctx, "failed to update person")
-		http.Error(w, "failed to update person", http.StatusInternalServerError)
-		return
-	}
-
-	// Отправляем ответ
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(ToResponse(updated))
-	if err != nil {
-		logger.Error(ctx, "Failed to encode updated response: %v", err)
-		http.Error(w, "Failed to encode updated response", http.StatusInternalServerError)
-		return
-	}
+type UpdatePersonRequest struct {
+	Name        *string `json:"name,omitempty"`
+	Surname     *string `json:"surname,omitempty"`
+	Patronymic  *string `json:"patronymic,omitempty"`
+	Age         *int    `json:"age,omitempty"`
+	Gender      *string `json:"gender,omitempty"`
+	Nationality *string `json:"nationality,omitempty"`
 }
