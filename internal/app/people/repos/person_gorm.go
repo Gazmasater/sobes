@@ -94,15 +94,6 @@ func (r *GormPersonRepository) UpdatePerson(ctx context.Context, person people.P
 	return person, nil
 }
 
-func (r *GormPersonRepository) ExistsByFullName(ctx context.Context, name, surname, patronymic string) (bool, error) {
-	var count int64
-
-	err := r.db.WithContext(ctx).Model(&people.Person{}).
-		Where("name = ? AND surname = ? AND patronymic = ?", name, surname, patronymic).
-		Count(&count).Error
-	return count > 0, err
-}
-
 func (r *GormPersonRepository) GetPersonByID(ctx context.Context, id int64) (people.Person, error) {
 	var person people.Person
 
