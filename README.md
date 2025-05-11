@@ -133,11 +133,13 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
-PUT /people/1
-Content-Type: application/json
-
-{
-  "age": 33
-}
-
+gaz358@gaz358-BOD-WXX9:~/myprog/sobes$ curl -X PUT http://localhost:8080/people/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    
+    "age": 300,
+   
+  }'
+invalid request body
+gaz358@gaz358-BOD-WXX9:~/myprog/sobes$ 
 
