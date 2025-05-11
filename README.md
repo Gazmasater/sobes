@@ -217,7 +217,6 @@ func TestDeletePerson(t *testing.T) {
 	}
 }
 
-
 [{
 	"resource": "/home/gaz358/myprog/sobes/internal/app/people/repos/del_test.go",
 	"owner": "_generated_diagnostic_collection_name_#0",
@@ -239,5 +238,4 @@ func TestDeletePerson(t *testing.T) {
 	"endLineNumber": 63,
 	"endColumn": 11
 }]
-
 
