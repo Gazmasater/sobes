@@ -133,109 +133,119 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
+Определите интерфейс для базы данных:
+
+В своем репозитории вы можете использовать интерфейс для работы с базой данных. Например:
+
+
 package repos
 
 import (
-	"context"
-	"fmt"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"gorm.io/gorm"
+    "gorm.io/gorm"
+    "context"
 )
 
+type DBInterface interface {
+    Delete(value interface{}, where ...interface{}) *gorm.DB
+}
+
+type GormPersonRepository struct {
+    db DBInterface
+}
+
+func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error {
+    if err := r.db.Delete(&people.Person{}, id).Error; err != nil {
+        return err
+    }
+    return nil
+}
+Теперь GormPersonRepository использует интерфейс DBInterface, который может быть реализован как для реального *gorm.DB, так и для мока.
+
+Измените мок MockDB для реализации интерфейса DBInterface:
+
+
 type MockDB struct {
-	mock.Mock
+    mock.Mock
 }
 
 func (m *MockDB) Delete(value interface{}, where ...interface{}) *gorm.DB {
-	args := m.Called(value, where)
-	return args.Get(0).(*gorm.DB)
+    args := m.Called(value, where)
+    return args.Get(0).(*gorm.DB)
 }
+Использование моков в тестах:
+
+Теперь вы можете использовать этот интерфейс и моки для тестирования, как это показано ниже:
+
 
 func TestDeletePerson(t *testing.T) {
-	tests := []struct {
-		name        string
-		id          int64
-		mockDBFunc  func(db *MockDB)
-		expectedErr error
-	}{
-		{
-			name: "successful deletion",
-			id:   1,
-			mockDBFunc: func(db *MockDB) {
-				// Мокаем успешное удаление
-				db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: nil})
-			},
-			expectedErr: nil,
-		},
-		{
-			name: "person not found",
-			id:   2,
-			mockDBFunc: func(db *MockDB) {
-				// Мокаем ошибку при удалении (например, если записи нет)
-				db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
-			},
-			expectedErr: gorm.ErrRecordNotFound,
-		},
-		{
-			name: "database error",
-			id:   3,
-			mockDBFunc: func(db *MockDB) {
-				// Мокаем ошибку базы данных
-				db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: fmt.Errorf("database error")})
-			},
-			expectedErr: fmt.Errorf("database error"),
-		},
-	}
+    tests := []struct {
+        name        string
+        id          int64
+        mockDBFunc  func(db *MockDB)
+        expectedErr error
+    }{
+        {
+            name: "successful deletion",
+            id:   1,
+            mockDBFunc: func(db *MockDB) {
+                db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: nil})
+            },
+            expectedErr: nil,
+        },
+        {
+            name: "person not found",
+            id:   2,
+            mockDBFunc: func(db *MockDB) {
+                db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
+            },
+            expectedErr: gorm.ErrRecordNotFound,
+        },
+        {
+            name: "database error",
+            id:   3,
+            mockDBFunc: func(db *MockDB) {
+                db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: fmt.Errorf("database error")})
+            },
+            expectedErr: fmt.Errorf("database error"),
+        },
+    }
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Инициализация мока базы данных и репозитория
-			db := new(MockDB)
-			repo := &GormPersonRepository{
-				db: db, // Подключаем мок базы данных к репозиторию
-			}
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            db := new(MockDB)
+            repo := &GormPersonRepository{
+                db: db,
+            }
 
-			// Настройка мока для текущего теста
-			tt.mockDBFunc(db)
+            tt.mockDBFunc(db)
 
-			// Запуск тестируемого метода
-			err := repo.DeletePerson(context.Background(), tt.id)
+            err := repo.DeletePerson(context.Background(), tt.id)
 
-			// Сравнение ошибки с ожидаемой
-			if tt.expectedErr != nil {
-				assert.EqualError(t, err, tt.expectedErr.Error())
-			} else {
-				assert.NoError(t, err)
-			}
+            if tt.expectedErr != nil {
+                assert.EqualError(t, err, tt.expectedErr.Error())
+            } else {
+                assert.NoError(t, err)
+            }
 
-			// Проверка, что методы мока были вызваны
-			db.AssertExpectations(t)
-		})
-	}
+            db.AssertExpectations(t)
+        })
+    }
 }
+Пояснение:
+Интерфейс DBInterface: Мы определили интерфейс с методом Delete, который соответствует поведению метода в *gorm.DB. Теперь мы можем использовать и реальный *gorm.DB, и его моки.
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/repos/del_test.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "IncompatibleAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "IncompatibleAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use db (variable of type *MockDB) as *gorm.DB value in struct literal",
-	"source": "compiler",
-	"startLineNumber": 63,
-	"startColumn": 9,
-	"endLineNumber": 63,
-	"endColumn": 11
-}]
+Мок MockDB: Мок теперь реализует интерфейс DBInterface, что позволяет использовать его в тестах вместо реального соединения с базой данных.
+
+Репозиторий теперь принимает интерфейс DBInterface, что позволяет вам передавать любые объекты, реализующие этот интерфейс (например, моки или настоящий *gorm.DB).
+
+Теперь ваш тест будет работать без ошибок, так как вы используете интерфейсы, а не конкретные типы.
+
+
+
+
+
+
+
+
+
 
