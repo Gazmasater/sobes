@@ -132,6 +132,15 @@ swag init -g cmd/main.go -o docs
 
 go test -run=NormalizeName
 
+internal/app/people/repos/person_gorm.go:23:112: unnecessary leading newline (whitespace)
+func (r *GormPersonRepository) CreatePerson(ctx context.Context, person people.Person) (people.Person, error) {
+                                                                                                               ^
+internal/app/people/repos/person_gorm.go:60:83: unnecessary leading newline (whitespace)
+func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error {
+                                                                                  ^
+internal/app/people/adapters/adapterhttp/handlers.go:200:1: unnecessary trailing newline (whitespace)
+}
+
 
 
 
