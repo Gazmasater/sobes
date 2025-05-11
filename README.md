@@ -133,32 +133,10 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
-if err != nil {
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return people.Person{}, err
-	}
+if errors.Is(err, gorm.ErrRecordNotFound) {
+	// ОК: записи нет, это ожидаемо
+} else if err != nil {
+	return people.Person{}, err
 }
-
-[{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/repos/person_gorm.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "cond",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/go/analysis/passes/nilness",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "cond"
-		}
-	},
-	"severity": 4,
-	"message": "tautological condition: non-nil != nil",
-	"source": "nilness",
-	"startLineNumber": 87,
-	"startColumn": 9,
-	"endLineNumber": 87,
-	"endColumn": 9
-}]
 
 
