@@ -133,113 +133,40 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
-Определите интерфейс для базы данных:
-
-В своем репозитории вы можете использовать интерфейс для работы с базой данных. Например:
-
-
-package repos
+package mocks
 
 import (
-    "gorm.io/gorm"
-    "context"
+	"context"
+	"people/internal/app/people"
 )
 
-type DBInterface interface {
-    Delete(value interface{}, where ...interface{}) *gorm.DB
+type MockPersonRepository struct {
+	CreateFn     func(ctx context.Context, person people.Person) (people.Person, error)
+	DeleteFn     func(ctx context.Context, id int64) error
+	GetByIDFn    func(ctx context.Context, id int64) (people.Person, error)
+	UpdateFn     func(ctx context.Context, person people.Person) (people.Person, error)
+	GetPeopleFn  func(ctx context.Context, filter people.Filter) ([]people.Person, error)
 }
 
-type GormPersonRepository struct {
-    db DBInterface
+func (m *MockPersonRepository) CreatePerson(ctx context.Context, person people.Person) (people.Person, error) {
+	return m.CreateFn(ctx, person)
 }
 
-func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error {
-    if err := r.db.Delete(&people.Person{}, id).Error; err != nil {
-        return err
-    }
-    return nil
-}
-Теперь GormPersonRepository использует интерфейс DBInterface, который может быть реализован как для реального *gorm.DB, так и для мока.
-
-Измените мок MockDB для реализации интерфейса DBInterface:
-
-
-type MockDB struct {
-    mock.Mock
+func (m *MockPersonRepository) DeletePerson(ctx context.Context, id int64) error {
+	return m.DeleteFn(ctx, id)
 }
 
-func (m *MockDB) Delete(value interface{}, where ...interface{}) *gorm.DB {
-    args := m.Called(value, where)
-    return args.Get(0).(*gorm.DB)
+func (m *MockPersonRepository) GetPersonByID(ctx context.Context, id int64) (people.Person, error) {
+	return m.GetByIDFn(ctx, id)
 }
-Использование моков в тестах:
 
-Теперь вы можете использовать этот интерфейс и моки для тестирования, как это показано ниже:
-
-
-func TestDeletePerson(t *testing.T) {
-    tests := []struct {
-        name        string
-        id          int64
-        mockDBFunc  func(db *MockDB)
-        expectedErr error
-    }{
-        {
-            name: "successful deletion",
-            id:   1,
-            mockDBFunc: func(db *MockDB) {
-                db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: nil})
-            },
-            expectedErr: nil,
-        },
-        {
-            name: "person not found",
-            id:   2,
-            mockDBFunc: func(db *MockDB) {
-                db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
-            },
-            expectedErr: gorm.ErrRecordNotFound,
-        },
-        {
-            name: "database error",
-            id:   3,
-            mockDBFunc: func(db *MockDB) {
-                db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: fmt.Errorf("database error")})
-            },
-            expectedErr: fmt.Errorf("database error"),
-        },
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            db := new(MockDB)
-            repo := &GormPersonRepository{
-                db: db,
-            }
-
-            tt.mockDBFunc(db)
-
-            err := repo.DeletePerson(context.Background(), tt.id)
-
-            if tt.expectedErr != nil {
-                assert.EqualError(t, err, tt.expectedErr.Error())
-            } else {
-                assert.NoError(t, err)
-            }
-
-            db.AssertExpectations(t)
-        })
-    }
+func (m *MockPersonRepository) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
+	return m.UpdateFn(ctx, person)
 }
-Пояснение:
-Интерфейс DBInterface: Мы определили интерфейс с методом Delete, который соответствует поведению метода в *gorm.DB. Теперь мы можем использовать и реальный *gorm.DB, и его моки.
 
-Мок MockDB: Мок теперь реализует интерфейс DBInterface, что позволяет использовать его в тестах вместо реального соединения с базой данных.
-
-Репозиторий теперь принимает интерфейс DBInterface, что позволяет вам передавать любые объекты, реализующие этот интерфейс (например, моки или настоящий *gorm.DB).
-
-Теперь ваш тест будет работать без ошибок, так как вы используете интерфейсы, а не конкретные типы.
-
+func (m *MockPersonRepository) GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error) {
+	return m.GetPeopleFn(ctx, filter)
+}
 
 
 
