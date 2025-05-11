@@ -1,3 +1,5 @@
+golangci-lint run
+
 go install github.com/swaggo/swag/cmd/swag@latest
 
 DROP TABLE IF EXISTS people;
@@ -128,36 +130,10 @@ curl -X POST http://localhost:8080/people \
 swag init -g cmd/main.go -o docs
 
 
-
-
-package yourpackage // замени на название своего пакета
-
-import (
-	"testing"
-)
-
-func TestNormalizeName(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"иван", "Иван"},
-		{"  сЕргей", "Сергей"},
-		{"ОЛЕГ  ", "Олег"},
-		{"", ""},
-		{"а", "А"},
-		{"   ", ""},
-	}
-
-	for _, tt := range tests {
-		result := NormalizeName(tt.input)
-		if result != tt.expected {
-			t.Errorf("NormalizeName(%q) = %q, expected %q", tt.input, result, tt.expected)
-		}
-	}
-}
-
 go test -run=NormalizeName
+
+
+
 
 
 
