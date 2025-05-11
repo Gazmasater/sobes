@@ -133,41 +133,83 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
-package mocks
+package handlers_test
 
 import (
 	"context"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"people/internal/app/handlers"
 	"people/internal/app/people"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
-type MockPersonRepository struct {
-	CreateFn     func(ctx context.Context, person people.Person) (people.Person, error)
-	DeleteFn     func(ctx context.Context, id int64) error
-	GetByIDFn    func(ctx context.Context, id int64) (people.Person, error)
-	UpdateFn     func(ctx context.Context, person people.Person) (people.Person, error)
-	GetPeopleFn  func(ctx context.Context, filter people.Filter) ([]people.Person, error)
+// Мок usecase
+type MockPersonUsecase struct {
+	mock.Mock
 }
 
-func (m *MockPersonRepository) CreatePerson(ctx context.Context, person people.Person) (people.Person, error) {
-	return m.CreateFn(ctx, person)
+func (m *MockPersonUsecase) DeletePerson(ctx context.Context, id int64) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
 }
 
-func (m *MockPersonRepository) DeletePerson(ctx context.Context, id int64) error {
-	return m.DeleteFn(ctx, id)
+func TestDeletePerson_Success(t *testing.T) {
+	mockUC := new(MockPersonUsecase)
+	handler := handlers.HTTPHandler{Uc: mockUC}
+
+	mockUC.On("DeletePerson", mock.Anything, int64(123)).Return(nil)
+
+	req := httptest.NewRequest(http.MethodDelete, "/people/123", nil)
+	w := httptest.NewRecorder()
+
+	handler.DeletePerson(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusNoContent, res.StatusCode)
+	mockUC.AssertExpectations(t)
 }
 
-func (m *MockPersonRepository) GetPersonByID(ctx context.Context, id int64) (people.Person, error) {
-	return m.GetByIDFn(ctx, id)
+func TestDeletePerson_InvalidID(t *testing.T) {
+	mockUC := new(MockPersonUsecase)
+	handler := handlers.HTTPHandler{Uc: mockUC}
+
+	req := httptest.NewRequest(http.MethodDelete, "/people/abc", nil)
+	w := httptest.NewRecorder()
+
+	handler.DeletePerson(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
 
-func (m *MockPersonRepository) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
-	return m.UpdateFn(ctx, person)
-}
+func TestDeletePerson_ErrorFromUsecase(t *testing.T) {
+	mockUC := new(MockPersonUsecase)
+	handler := handlers.HTTPHandler{Uc: mockUC}
 
-func (m *MockPersonRepository) GetPeople(ctx context.Context, filter people.Filter) ([]people.Person, error) {
-	return m.GetPeopleFn(ctx, filter)
-}
+	mockUC.On("DeletePerson", mock.Anything, int64(123)).Return(errors.New("something went wrong"))
 
+	req := httptest.NewRequest(http.MethodDelete, "/people/123", nil)
+	w := httptest.NewRecorder()
+
+	handler.DeletePerson(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+	mockUC.AssertExpectations(t)
+}
 
 
 
