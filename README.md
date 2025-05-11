@@ -133,4 +133,88 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
-	go fmt ./...
+package repos_test
+
+import (
+	"context"
+	"testing"
+	"fmt"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/your_project/internal/app/people"
+	"github.com/your_project/internal/app/people/repos"
+)
+
+type MockDB struct {
+	mock.Mock
+}
+
+func (m *MockDB) Delete(value interface{}, where ...interface{}) *gorm.DB {
+	args := m.Called(value, where)
+	return args.Get(0).(*gorm.DB)
+}
+
+func TestDeletePerson(t *testing.T) {
+	tests := []struct {
+		name        string
+		id          int64
+		mockDBFunc  func(db *MockDB)
+		expectedErr error
+	}{
+		{
+			name: "successful deletion",
+			id:   1,
+			mockDBFunc: func(db *MockDB) {
+				// Мокаем успешное удаление
+				db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: nil})
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "person not found",
+			id:   2,
+			mockDBFunc: func(db *MockDB) {
+				// Мокаем ошибку при удалении (например, если записи нет)
+				db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: gorm.ErrRecordNotFound})
+			},
+			expectedErr: gorm.ErrRecordNotFound,
+		},
+		{
+			name: "database error",
+			id:   3,
+			mockDBFunc: func(db *MockDB) {
+				// Мокаем ошибку базы данных
+				db.On("Delete", mock.Anything, mock.Anything).Return(&gorm.DB{Error: fmt.Errorf("database error")})
+			},
+			expectedErr: fmt.Errorf("database error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Инициализация мока базы данных и репозитория
+			db := new(MockDB)
+			repo := &repos.GormPersonRepository{
+				DB: db, // Подключаем мок базы данных к репозиторию
+			}
+
+			// Настройка мока для текущего теста
+			tt.mockDBFunc(db)
+
+			// Запуск тестируемого метода
+			err := repo.DeletePerson(context.Background(), tt.id)
+
+			// Сравнение ошибки с ожидаемой
+			if tt.expectedErr != nil {
+				assert.EqualError(t, err, tt.expectedErr.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			// Проверка, что методы мока были вызваны
+			db.AssertExpectations(t)
+		})
+	}
+}
+
+go test -v ./internal/app/people/repos_test
