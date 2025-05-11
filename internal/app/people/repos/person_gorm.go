@@ -50,7 +50,6 @@ func (r *GormPersonRepository) CreatePerson(ctx context.Context, person people.P
 }
 
 func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error {
-
 	if err := r.db.Delete(&people.Person{}, id).Error; err != nil {
 		return err
 	}
@@ -59,17 +58,14 @@ func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error
 }
 
 func (r *GormPersonRepository) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
-	// Нормализация
 	person.Name = pkg.NormalizeName(person.Name)
 	person.Surname = pkg.NormalizeName(person.Surname)
 	person.Patronymic = pkg.NormalizeName(person.Patronymic)
 
-	// Валидация имени и фамилии
 	if !pkg.IsValidName(person.Name) || !pkg.IsValidName(person.Surname) {
 		return people.Person{}, fmt.Errorf("invalid name or surname format")
 	}
 
-	// Валидация отчества (если указано)
 	if len(person.Patronymic) > 0 && !pkg.IsValidName(person.Patronymic) {
 		return people.Person{}, fmt.Errorf("invalid patronymic format")
 	}
