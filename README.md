@@ -46,6 +46,35 @@ curl -X PUT http://localhost:8080/people/1 \
 go test -run=NormalizeName
 
 
+package yourpackage // замени на название своего пакета
+
+import (
+	"testing"
+)
+
+func TestNormalizeName(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"иван", "Иван"},
+		{"  сЕргей", "Сергей"},
+		{"ОЛЕГ  ", "Олег"},
+		{"", ""},
+		{"а", "А"},
+		{"   ", ""},
+	}
+
+	for _, tt := range tests {
+		result := NormalizeName(tt.input)
+		if result != tt.expected {
+			t.Errorf("NormalizeName(%q) = %q, expected %q", tt.input, result, tt.expected)
+		}
+	}
+}
+
+
+
 
 
 
