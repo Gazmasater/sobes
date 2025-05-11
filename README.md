@@ -141,3 +141,4 @@ type UpdatePersonRequest struct {
 	Gender      *string `json:"gender,omitempty"`
 	Nationality *string `json:"nationality,omitempty"`
 }
+
