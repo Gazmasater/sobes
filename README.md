@@ -104,25 +104,38 @@ swag init -g cmd/main.go -o docs
 
 
 
-type Person_Migr struct {
-	ID          uint   `gorm:"primaryKey"`
-	Name        string `gorm:"index:idx_name_surname"`
-	Surname     string `gorm:"index:idx_name_surname"`
-	Patronymic  string
-	Age         int
-	Gender      string
-	Nationality string
-}
+package yourpackage // замени на фактическое имя пакета
 
-func MigratePersonSchema(ctx context.Context, db *gorm.DB) {
-	// Выполнение авто-миграции для создания таблицы и индексов
-	if err := db.AutoMigrate(&Person_Migr{}); err != nil {
-		logger.Fatalf(ctx, "failed to migrate Person schema: %v", err)
+import (
+	"testing"
+)
+
+func TestIsValidName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"ValidRussian", "Иван", true},
+		{"ValidEnglish", "John", true},
+		{"LowercaseStart", "иван", false},
+		{"ContainsNumber", "Иван1", false},
+		{"ContainsSpace", "Иван Иванов", false},
+		{"Empty", "", false},
+		{"OnlySymbols", "@#$%", false},
+		{"SingleUpper", "A", true},
+		{"HyphenName", "Жан-Поль", false}, // не пройдёт, если дефис не допускается
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsValidName(tt.input)
+			if result != tt.expected {
+				t.Errorf("IsValidName(%q) = %v, want %v", tt.input, result, tt.expected)
+			}
+		})
 	}
 }
-
-
-
 
 
 
