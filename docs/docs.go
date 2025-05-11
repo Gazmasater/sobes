@@ -361,7 +361,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "API for managing people.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-
 }
 
 func init() {

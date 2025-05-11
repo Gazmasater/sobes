@@ -158,18 +158,23 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 			existing.Nationality = h.svc.GetNationality(ctx, *req.Name)
 		}
 	}
+
 	if req.Surname != nil {
 		existing.Surname = *req.Surname
 	}
+
 	if req.Patronymic != nil {
 		existing.Patronymic = *req.Patronymic
 	}
+
 	if req.Age != nil {
 		existing.Age = *req.Age
 	}
+
 	if req.Gender != nil {
 		existing.Gender = *req.Gender
 	}
+
 	if req.Nationality != nil {
 		existing.Nationality = *req.Nationality
 	}
@@ -189,6 +194,7 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
 func (h *HTTPHandler) RegisterRoutes(r chi.Router) {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
@@ -225,6 +231,7 @@ func (h *HTTPHandler) GetPeople(w http.ResponseWriter, r *http.Request) {
 	age, _ := strconv.Atoi(params.Get("age"))
 	limit, _ := strconv.Atoi(params.Get("limit"))
 	offset, _ := strconv.Atoi(params.Get("offset"))
+
 	if limit == 0 {
 		limit = 10
 	}

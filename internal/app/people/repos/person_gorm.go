@@ -31,9 +31,11 @@ func (r *GormPersonRepository) CreatePerson(ctx context.Context, person people.P
 		return people.Person{}, fmt.Errorf("invalid patronymic format")
 	}
 	var existing people.Person
+
 	err := r.db.WithContext(ctx).
 		Where("name = ? AND surname = ? AND patronymic = ?", person.Name, person.Surname, person.Patronymic).
 		First(&existing).Error
+
 	if err == nil {
 		return people.Person{}, fmt.Errorf("person already exists")
 	}
