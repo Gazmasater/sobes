@@ -132,42 +132,84 @@ swag init -g cmd/main.go -o docs
 
 go test -run=NormalizeName
 
-internal/app/people/repos/person_gorm.go:23:112: unnecessary leading newline (whitespace)
-func (r *GormPersonRepository) CreatePerson(ctx context.Context, person people.Person) (people.Person, error) {
-                                                                                                               ^
-internal/app/people/repos/person_gorm.go:60:83: unnecessary leading newline (whitespace)
-func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error {
-                                                                                  ^
-internal/app/people/adapters/adapterhttp/handlers.go:200:1: unnecessary trailing newline (whitespace)
+                          ^
+// UpdatePerson godoc
+// @Summary      Update person
+// @Description  Updates person by ID and enriches if name changed
+// @Tags         people
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int64                 true  "Person ID"
+// @Param        person  body      UpdatePersonRequest   true  "Updated person (partial)"
+// @Success      200     {object}  PersonResponse
+// @Failure      400     {string}  string  "invalid request body or id"
+// @Failure      404     {string}  string  "person not found"
+// @Failure      500     {string}  string  "failed to update person"
+// @Router       /people/{id} [put]
+func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		logger.Warn(ctx, "invalid id")
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	var req UpdatePersonRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logger.Warn(ctx, "invalid request body")
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	existing, err := h.uc.GetPersonByID(ctx, id)
+	if err != nil {
+		logger.Warn(ctx, "person not found")
+		http.Error(w, "person not found", http.StatusNotFound)
+		return
+	}
+
+	if req.Name != nil {
+		nameChanged := existing.Name != *req.Name
+		existing.Name = *req.Name
+		if nameChanged {
+			existing.Age = h.svc.GetAge(ctx, *req.Name)
+			existing.Gender = h.svc.GetGender(ctx, *req.Name)
+			existing.Nationality = h.svc.GetNationality(ctx, *req.Name)
+		}
+	}
+	if req.Surname != nil {
+		existing.Surname = *req.Surname
+	}
+	if req.Patronymic != nil {
+		existing.Patronymic = *req.Patronymic
+	}
+	if req.Age != nil {
+		existing.Age = *req.Age
+	}
+	if req.Gender != nil {
+		existing.Gender = *req.Gender
+	}
+	if req.Nationality != nil {
+		existing.Nationality = *req.Nationality
+	}
+
+	// Обновляем запись
+	updated, err := h.uc.UpdatePerson(ctx, existing)
+	if err != nil {
+		logger.Warn(ctx, "failed to update person")
+		http.Error(w, "failed to update person", http.StatusInternalServerError)
+		return
+	}
+
+	// Отправляем ответ
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(ToResponse(updated))
+	if err != nil {
+		logger.Error(ctx, "Failed to encode updated response: %v", err)
+		http.Error(w, "Failed to encode updated response", http.StatusInternalServerError)
+		return
+	}
 }
-
-
-	// Для первого вызова
-err := json.NewEncoder(w).Encode(ToResponse(updated))
-if err != nil {
-    logger.Error(ctx, "Failed to encode updated response: %v", err)
-    http.Error(w, "Failed to encode updated response", http.StatusInternalServerError)
-    return
-}
-
-// Для второго вызова
-err = json.NewEncoder(w).Encode(resp)
-if err != nil {
-    logger.Error(ctx, "Failed to encode response: %v", err)
-    http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-    return
-}
-
-
-
-                                 ^
-
-
-
-
-
-
-
-
-
-
