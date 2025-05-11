@@ -218,3 +218,27 @@ func TestDeletePerson(t *testing.T) {
 }
 
 go test -v ./internal/app/people/repos_test
+
+
+
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/repos/del_test.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "IncompatibleAssign",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "IncompatibleAssign"
+		}
+	},
+	"severity": 8,
+	"message": "cannot use db (variable of type *MockDB) as *gorm.DB value in struct literal",
+	"source": "compiler",
+	"startLineNumber": 63,
+	"startColumn": 9,
+	"endLineNumber": 63,
+	"endColumn": 11
+}]
