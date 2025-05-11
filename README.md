@@ -142,8 +142,13 @@ internal/app/people/adapters/adapterhttp/handlers.go:200:1: unnecessary trailing
 }
 
 
-internal/app/people/adapters/adapterhttp/handlers.go:188:27: Error return value of `(*encoding/json.Encoder).Encode` is not checked (errcheck)
-        json.NewEncoder(w).Encode(ToResponse(updated))
+err := json.NewEncoder(w).Encode(ToResponse(updated))
+if err != nil {
+    logger.Error(ctx, "Failed to encode response: %v", err)
+    http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+    return
+}
+
                                  ^
 
 
