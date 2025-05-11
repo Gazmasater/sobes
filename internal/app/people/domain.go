@@ -8,9 +8,9 @@ import (
 )
 
 type Person struct {
-	ID          uint
-	Name        string
-	Surname     string
+	ID          uint   `gorm:"primaryKey"`
+	Name        string `gorm:"index:idx_name_surname"`
+	Surname     string `gorm:"index:idx_name_surname"`
 	Patronymic  string
 	Age         int
 	Gender      string
@@ -30,17 +30,10 @@ type Filter struct {
 	Offset      int
 }
 
-type PersonMigration struct {
-	ID         uint   `gorm:"primaryKey"`
-	Name       string `gorm:"index"`
-	Surname    string `gorm:"index"`
-	Patronymic string `gorm:"index"`
-	Age        int
-}
-
 func MigratePersonSchema(ctx context.Context, db *gorm.DB) {
-	err := db.AutoMigrate(&PersonMigration{})
+	err := db.AutoMigrate(&Person{})
 	if err != nil {
 		logger.Fatalf(ctx, "failed to migrate Person schema: %v", err)
 	}
+
 }
