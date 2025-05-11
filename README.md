@@ -130,38 +130,34 @@ swag init -g cmd/main.go -o docs
 
 
 
-package yourpackage // замени на фактическое имя пакета
+package yourpackage // замени на название своего пакета
 
 import (
 	"testing"
 )
 
-func TestIsValidName(t *testing.T) {
+func TestNormalizeName(t *testing.T) {
 	tests := []struct {
-		name     string
 		input    string
-		expected bool
+		expected string
 	}{
-		{"ValidRussian", "Иван", true},
-		{"ValidEnglish", "John", true},
-		{"LowercaseStart", "иван", false},
-		{"ContainsNumber", "Иван1", false},
-		{"ContainsSpace", "Иван Иванов", false},
-		{"Empty", "", false},
-		{"OnlySymbols", "@#$%", false},
-		{"SingleUpper", "A", true},
-		{"HyphenName", "Жан-Поль", false}, // не пройдёт, если дефис не допускается
+		{"иван", "Иван"},
+		{"  сЕргей", "Сергей"},
+		{"ОЛЕГ  ", "Олег"},
+		{"", ""},
+		{"а", "А"},
+		{"   ", ""},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := IsValidName(tt.input)
-			if result != tt.expected {
-				t.Errorf("IsValidName(%q) = %v, want %v", tt.input, result, tt.expected)
-			}
-		})
+		result := NormalizeName(tt.input)
+		if result != tt.expected {
+			t.Errorf("NormalizeName(%q) = %q, expected %q", tt.input, result, tt.expected)
+		}
 	}
 }
+
+go test -run=NormalizeName
 
 
 
