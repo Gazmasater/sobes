@@ -133,10 +133,43 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
-if errors.Is(err, gorm.ErrRecordNotFound) {
-	// ОК: записи нет, это ожидаемо
-} else if err != nil {
-	return people.Person{}, err
-}
+func (r *GormPersonRepository) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
+	// Нормализация
+	person.Name = pkg.NormalizeName(person.Name)
+	person.Surname = pkg.NormalizeName(person.Surname)
+	person.Patronymic = pkg.NormalizeName(person.Patronymic)
 
+	// Валидация имени и фамилии
+	if !pkg.IsValidName(person.Name) || !pkg.IsValidName(person.Surname) {
+		return people.Person{}, fmt.Errorf("invalid name or surname format")
+	}
+
+	// Валидация отчества (если указано)
+	if len(person.Patronymic) > 0 && !pkg.IsValidName(person.Patronymic) {
+		return people.Person{}, fmt.Errorf("invalid patronymic format")
+	}
+
+	// Проверка на уникальность по ФИО, исключая текущую запись
+	var existing people.Person
+	result := r.db.WithContext(ctx).
+		Where("id <> ? AND name = ? AND surname = ? AND patronymic = ?", person.ID, person.Name, person.Surname, person.Patronymic).
+		First(&existing)
+
+	if result.Error != nil {
+		// Если ошибка – не "запись не найдена", вернуть её
+		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return people.Person{}, result.Error
+		}
+	} else {
+		// Если ошибка nil – нашли дубликат
+		return people.Person{}, fmt.Errorf("another person with same name already exists")
+	}
+
+	// Обновление записи
+	if err := r.db.WithContext(ctx).Save(&person).Error; err != nil {
+		return people.Person{}, err
+	}
+
+	return person, nil
+}
 
