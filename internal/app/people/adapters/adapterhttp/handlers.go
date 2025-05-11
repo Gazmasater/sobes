@@ -174,24 +174,21 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 		existing.Nationality = *req.Nationality
 	}
 
-	// Обновляем запись
+	// Обновляем в репозитории (валидация и проверка на дубли внутри)
 	updated, err := h.uc.UpdatePerson(ctx, existing)
 	if err != nil {
-		logger.Warn(ctx, "failed to update person")
-		http.Error(w, "failed to update person", http.StatusInternalServerError)
+		logger.Warn(ctx, "failed to update person: %v", err)
+		http.Error(w, "failed to update person", http.StatusBadRequest)
 		return
 	}
 
-	// Отправляем ответ
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(ToResponse(updated))
-	if err != nil {
+	if err := json.NewEncoder(w).Encode(ToResponse(updated)); err != nil {
 		logger.Error(ctx, "Failed to encode updated response: %v", err)
 		http.Error(w, "Failed to encode updated response", http.StatusInternalServerError)
 		return
 	}
 }
-
 func (h *HTTPHandler) RegisterRoutes(r chi.Router) {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
