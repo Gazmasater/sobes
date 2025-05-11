@@ -221,24 +221,51 @@ go test -v ./internal/app/people/repos_test
 
 
 
-[{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/repos/del_test.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "IncompatibleAssign",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/internal/typesinternal",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "IncompatibleAssign"
-		}
-	},
-	"severity": 8,
-	"message": "cannot use db (variable of type *MockDB) as *gorm.DB value in struct literal",
-	"source": "compiler",
-	"startLineNumber": 63,
-	"startColumn": 9,
-	"endLineNumber": 63,
-	"endColumn": 11
-}]
+go get github.com/DATA-DOG/go-sqlmock
+
+
+
+package repos_test
+
+import (
+	"context"
+	"testing"
+	"fmt"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/your_project/internal/app/people"
+	"github.com/your_project/internal/app/people/repos"
+	"github.com/jinzhu/gorm"
+)
+
+func TestDeletePerson(t *testing.T) {
+	// Создаем мок для базы данных
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open mock database: %v", err)
+	}
+	defer db.Close()
+
+	// Создаем экземпляр репозитория с мокируемым объектом базы данных
+	repo := &repos.GormPersonRepository{
+		DB: gorm.New(db), // Используем gorm с мок-объектом
+	}
+
+	// Настроим мок для удаления записи
+	mock.ExpectBegin()
+	mock.ExpectExec("DELETE FROM \"people\" WHERE \"id\" = ?").
+		WithArgs(1).
+		WillReturnResult(sqlmock.NewResult(1, 1)) // Возвращаем успешный результат удаления
+	mock.ExpectCommit()
+
+	// Вызов метода DeletePerson
+	err = repo.DeletePerson(context.Background(), 1)
+	
+	// Проверка результатов
+	assert.NoError(t, err)
+	
+	// Проверка, что все ожидания выполнены
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unmet expectations: %s", err)
+	}
+}
