@@ -133,12 +133,11 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
-type UpdatePersonRequest struct {
-	Name        *string `json:"name,omitempty"`
-	Surname     *string `json:"surname,omitempty"`
-	Patronymic  *string `json:"patronymic,omitempty"`
-	Age         *int    `json:"age,omitempty"`
-	Gender      *string `json:"gender,omitempty"`
-	Nationality *string `json:"nationality,omitempty"`
+PUT /people/1
+Content-Type: application/json
+
+{
+  "age": 33
 }
+
 
