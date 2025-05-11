@@ -133,8 +133,4 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
-gaz358@gaz358-BOD-WXX9:~/myprog/sobes$ golangci-lint run
-internal/app/people/repos/person_gorm.go:52:83: unnecessary leading newline (whitespace)
-func (r *GormPersonRepository) DeletePerson(ctx context.Context, id int64) error {
-                                                                                  ^
-gaz358@gaz358-BOD-WXX9:~/myprog/sobes
+	go fmt ./...
