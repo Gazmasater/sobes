@@ -64,6 +64,8 @@ func main() {
 		log.Fatal("failed to connect to DB:", err)
 	}
 
+	logger.Info(ctx, "Start Postgres port=", port)
+
 	// Выполняем миграцию схемы
 	people.MigratePersonSchema(ctx, db)
 
