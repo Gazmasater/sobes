@@ -142,12 +142,10 @@ internal/app/people/adapters/adapterhttp/handlers.go:200:1: unnecessary trailing
 }
 
 
-err := json.NewEncoder(w).Encode(ToResponse(updated))
-if err != nil {
-    logger.Error(ctx, "Failed to encode response: %v", err)
-    http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-    return
-}
+	json.NewEncoder(w).Encode(ToResponse(updated))
+
+	json.NewEncoder(w).Encode(resp)
+
 
                                  ^
 
