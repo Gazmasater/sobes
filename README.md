@@ -133,18 +133,14 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
-package handlers_test
+package adapterhttp
 
 import (
 	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
-
-	"people/internal/app/handlers"
-	"people/internal/app/people"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -162,7 +158,7 @@ func (m *MockPersonUsecase) DeletePerson(ctx context.Context, id int64) error {
 
 func TestDeletePerson_Success(t *testing.T) {
 	mockUC := new(MockPersonUsecase)
-	handler := handlers.HTTPHandler{Uc: mockUC}
+	handler := HTTPHandler{uc: mockUC}
 
 	mockUC.On("DeletePerson", mock.Anything, int64(123)).Return(nil)
 
@@ -180,7 +176,7 @@ func TestDeletePerson_Success(t *testing.T) {
 
 func TestDeletePerson_InvalidID(t *testing.T) {
 	mockUC := new(MockPersonUsecase)
-	handler := handlers.HTTPHandler{Uc: mockUC}
+	handler := HTTPHandler{uc: mockUC}
 
 	req := httptest.NewRequest(http.MethodDelete, "/people/abc", nil)
 	w := httptest.NewRecorder()
@@ -195,7 +191,7 @@ func TestDeletePerson_InvalidID(t *testing.T) {
 
 func TestDeletePerson_ErrorFromUsecase(t *testing.T) {
 	mockUC := new(MockPersonUsecase)
-	handler := handlers.HTTPHandler{Uc: mockUC}
+	handler := HTTPHandler{uc: mockUC}
 
 	mockUC.On("DeletePerson", mock.Anything, int64(123)).Return(errors.New("something went wrong"))
 
@@ -211,6 +207,28 @@ func TestDeletePerson_ErrorFromUsecase(t *testing.T) {
 	mockUC.AssertExpectations(t)
 }
 
+
+[{
+	"resource": "/home/gaz358/myprog/sobes/internal/app/people/adapters/adapterhttp/hendlers_test.go",
+	"owner": "_generated_diagnostic_collection_name_#0",
+	"code": {
+		"value": "InvalidIfaceAssign",
+		"target": {
+			"$mid": 1,
+			"path": "/golang.org/x/tools/internal/typesinternal",
+			"scheme": "https",
+			"authority": "pkg.go.dev",
+			"fragment": "InvalidIfaceAssign"
+		}
+	},
+	"severity": 8,
+	"message": "cannot use mockUC (variable of type *MockPersonUsecase) as usecase.PersonUseCase value in struct literal: *MockPersonUsecase does not implement usecase.PersonUseCase (missing method CreatePerson)",
+	"source": "compiler",
+	"startLineNumber": 26,
+	"startColumn": 29,
+	"endLineNumber": 26,
+	"endColumn": 35
+}]
 
 
 
