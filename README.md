@@ -133,27 +133,43 @@ swag init -g cmd/main.go -o docs
 go test -run=NormalizeName
 
                           ^
-[{
-	"resource": "/home/gaz358/myprog/sobes/internal/app/people/repos/person_gorm.go",
-	"owner": "_generated_diagnostic_collection_name_#0",
-	"code": {
-		"value": "cond",
-		"target": {
-			"$mid": 1,
-			"path": "/golang.org/x/tools/go/analysis/passes/nilness",
-			"scheme": "https",
-			"authority": "pkg.go.dev",
-			"fragment": "cond"
-		}
-	},
-	"severity": 4,
-	"message": "tautological condition: non-nil != nil",
-	"source": "nilness",
-	"startLineNumber": 82,
-	"startColumn": 9,
-	"endLineNumber": 82,
-	"endColumn": 9
-}]
+func (r *GormPersonRepository) UpdatePerson(ctx context.Context, person people.Person) (people.Person, error) {
+	person.Name = pkg.NormalizeName(person.Name)
+	person.Surname = pkg.NormalizeName(person.Surname)
+	person.Patronymic = pkg.NormalizeName(person.Patronymic)
+
+	if !pkg.IsValidName(person.Name) || !pkg.IsValidName(person.Surname) {
+		return people.Person{}, fmt.Errorf("invalid name or surname format")
+	}
+
+	if len(person.Patronymic) > 0 && !pkg.IsValidName(person.Patronymic) {
+		return people.Person{}, fmt.Errorf("invalid patronymic format")
+	}
+
+	// Проверим, не конфликтует ли обновление с уже существующей записью
+	var existing people.Person
+	err := r.db.WithContext(ctx).
+		Where("id <> ? AND name = ? AND surname = ? AND patronymic = ?", person.ID, person.Name, person.Surname, person.Patronymic).
+		First(&existing).Error
+	if err == nil {
+		return people.Person{}, fmt.Errorf("another person with same name already exists")
+	}
+
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return people.Person{}, err
+	}
+
+	if err := r.db.WithContext(ctx).Save(&person).Error; err != nil {
+		return people.Person{}, err
+	}
+
+	return person, nil
+}
+
+
+if err != nil && err != gorm.ErrRecordNotFound {
+		return people.Person{}, err
+	}
 
 
 
