@@ -35,5 +35,4 @@ func MigratePersonSchema(ctx context.Context, db *gorm.DB) {
 	if err != nil {
 		logger.Fatalf(ctx, "failed to migrate Person schema: %v", err)
 	}
-
 }

@@ -48,7 +48,6 @@ func (h HTTPHandler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получаем доп. данные
 	age := h.svc.GetAge(ctx, req.Name)
 	gender := h.svc.GetGender(ctx, req.Name)
 	nationality := h.svc.GetNationality(ctx, req.Name)
@@ -71,7 +70,12 @@ func (h HTTPHandler) CreatePerson(w http.ResponseWriter, r *http.Request) {
 
 	resp := ToResponse(createdPerson)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		logger.Error(ctx, "Failed to encode response: %v", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // DeletePerson godoc
@@ -98,7 +102,6 @@ func (h HTTPHandler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debug(ctx, "Deleting person with ID: %d\n", id)
 
-	// Вызываем UseCase для удаления
 	err = h.uc.DeletePerson(r.Context(), int64(id))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -124,7 +127,6 @@ func (h HTTPHandler) DeletePerson(w http.ResponseWriter, r *http.Request) {
 func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Получаем ID из URL
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -133,7 +135,6 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Декодируем JSON-тело запроса
 	var req UpdatePersonRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Warn(ctx, "invalid request body")
@@ -141,7 +142,6 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получаем существующего человека
 	existing, err := h.uc.GetPersonByID(ctx, id)
 	if err != nil {
 		logger.Warn(ctx, "person not found")
@@ -149,7 +149,6 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Проверяем и обновляем только переданные поля
 	if req.Name != nil {
 		nameChanged := existing.Name != *req.Name
 		existing.Name = *req.Name
@@ -185,7 +184,12 @@ func (h HTTPHandler) UpdatePerson(w http.ResponseWriter, r *http.Request) {
 
 	// Отправляем ответ
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ToResponse(updated))
+	err = json.NewEncoder(w).Encode(ToResponse(updated))
+	if err != nil {
+		logger.Error(ctx, "Failed to encode updated response: %v", err)
+		http.Error(w, "Failed to encode updated response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *HTTPHandler) RegisterRoutes(r chi.Router) {
@@ -196,7 +200,6 @@ func (h *HTTPHandler) RegisterRoutes(r chi.Router) {
 	r.Delete("/people/{id}", h.DeletePerson)
 	r.Put("/people/{id}", h.UpdatePerson)
 	r.Get("/people", h.GetPeople)
-
 }
 
 // GetPeople godoc

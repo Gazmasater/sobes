@@ -18,7 +18,7 @@ func TestIsValidName(t *testing.T) {
 		{"Empty", "", false},
 		{"OnlySymbols", "@#$%", false},
 		{"SingleUpper", "A", true},
-		{"HyphenName", "Жан-Поль", false}, // не пройдёт, если дефис не допускается
+		{"HyphenName", "Жан-Поль", false},
 	}
 
 	for _, tt := range tests {
@@ -28,5 +28,26 @@ func TestIsValidName(t *testing.T) {
 				t.Errorf("IsValidName(%q) = %v, want %v", tt.input, result, tt.expected)
 			}
 		})
+	}
+}
+
+func TestNormalizeName(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"ivan", "Ivan"},
+		{"  sErgey", "Sergey"},
+		{"OLEG  ", "Oleg"},
+		{"", ""},
+		{"a", "A"},
+		{"   ", ""},
+	}
+
+	for _, tt := range tests {
+		result := NormalizeName(tt.input)
+		if result != tt.expected {
+			t.Errorf("NormalizeName(%q) = %q, expected %q", tt.input, result, tt.expected)
+		}
 	}
 }
