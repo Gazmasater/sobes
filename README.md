@@ -169,6 +169,54 @@ func main() {
 }
 
 
-az358@gaz358-BOD-WXX9:~/myprog/pars$ go run .
-2025/05/13 15:46:14 Ошибка загрузки страницы:exec: "google-chrome": executable file not found in $PATH
-exit status 1
+
+✅ Решение — установить Google Chrome или Chromium
+🔹 Вариант 1: Установить Chromium (рекомендуется для серверов)
+bash
+Копировать
+Редактировать
+sudo apt update
+sudo apt install -y chromium-browser
+или (если chromium-browser не находит):
+
+bash
+Копировать
+Редактировать
+sudo apt install -y chromium
+Проверь, что он установлен:
+
+bash
+Копировать
+Редактировать
+which chromium
+Если вывод: /usr/bin/chromium, всё в порядке.
+
+🔹 Вариант 2: Установить Google Chrome
+bash
+Копировать
+Редактировать
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo apt install -y ./google-chrome-stable_current_amd64.deb
+Проверь установку:
+
+bash
+Копировать
+Редактировать
+which google-chrome
+🔧 Если установлен Chromium, но chromedp его не видит
+Можно указать путь к бинарнику вручную:
+
+go
+Копировать
+Редактировать
+opts := append(chromedp.DefaultExecAllocatorOptions[:],
+	chromedp.ExecPath("/usr/bin/chromium"),
+)
+ctx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+🔁 Повтори запуск после установки
+bash
+Копировать
+Редактировать
+go run .
+Если всё установлено правильно — программа откроет страницу Ozon и выведет HTML или данные.
+
