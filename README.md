@@ -167,3 +167,8 @@ func main() {
 	fmt.Println("✅ HTML получен:")
 	fmt.Println(html[:1000]) // печатаем первые 1000 символов
 }
+
+
+az358@gaz358-BOD-WXX9:~/myprog/pars$ go run .
+2025/05/13 15:46:14 Ошибка загрузки страницы:exec: "google-chrome": executable file not found in $PATH
+exit status 1
