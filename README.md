@@ -129,7 +129,51 @@ curl -X POST http://localhost:8080/people \
 
 
 
-az358@gaz358-BOD-WXX9:~/myprog/pars$ go run .
-✅ HTML получен:
-<html lang="ru"><head><meta content="text/html; charset=utf-8" http-equiv="Content-Type"><meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1"><meta name="robots" content="noindex, nofollow"><link rel="stylesheet" href="https://cdn1.ozone.ru/s3/abt-complaints/static/v1/common.css"><style>.con {overflow: auto;margin: auto;}  .mc {max-width: 420px;padding: 0 16px;overflow: auto}  .bc {padding-top: 32px}  h1 {margin: 24px 0 8px 0}  .tc {padding: 8px 0}  ul {margin: 8px 0 8px 0;padding-left: 24px}  .h {font-size: 12px;line-height: 16px;color: rgba(0, 26, 52, .6)}  .rb {margin-bottom: 16px}  .sb {background-color: transparent;color: var(--ctrlPrimary);padding: 6px}  .sb:hover {color: var(--hoverPrimary)}  .im {margin-left: -16px;width: 144px}  @media (max-width: 375px) {  .im {width: 104px}  h1 {margin-top: 20px;font-size: 20px;line-height: 24px}  .bc {padding-bottom: 50px}  .tc {color: rgba(0, 26, 52, .6)}  }</style><title>Доступ ограничен</title
-gaz358@gaz358-BOD-WXX9:~/myprog/pars$ 
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/chromedp/chromedp"
+)
+
+func main() {
+	// Создаем контекст с таймаутом
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// Запускаем chromedp
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.Flag("headless", true), // headless режим
+		chromedp.Flag("disable-gpu", true),
+		chromedp.Flag("no-sandbox", true),
+		chromedp.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "+
+			"(KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"),
+	)
+	allocCtx, cancelAlloc := chromedp.NewExecAllocator(ctx, opts...)
+	defer cancelAlloc()
+
+	taskCtx, cancelTask := chromedp.NewContext(allocCtx)
+	defer cancelTask()
+
+	// URL страницы
+	url := "https://www.ozon.ru/"
+	var html string
+
+	// Выполняем действия: перейти и получить HTML
+	err := chromedp.Run(taskCtx,
+		chromedp.Navigate(url),
+		chromedp.Sleep(3*time.Second), // подождать загрузку скриптов
+		chromedp.OuterHTML("html", &html),
+	)
+	if err != nil {
+		log.Fatalf("Ошибка при загрузке страницы: %v", err)
+	}
+
+	// Выводим первые 1000 символов HTML
+	fmt.Println("✅ HTML получен:")
+	fmt.Println(html[:1000])
+}
