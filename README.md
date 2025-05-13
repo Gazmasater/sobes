@@ -177,3 +177,29 @@ func main() {
 	fmt.Println("✅ HTML получен:")
 	fmt.Println(html[:1000])
 }
+
+
+gaz358@gaz358-BOD-WXX9:~/myprog/pars$ go run .
+✅ HTML получен:
+<html lang="ru"><head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1">
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <link rel="stylesheet" href="https://cdn1.ozone.ru/s3/abt-complaints/static/v1/common.css">
+  <title>Доступ ограничен</title>
+  <link rel="stylesheet" href="https://cdn2.ozone.ru/s3/abt-challenge/style_v25.css">
+</head>
+
+<body>
+<noscript>
+  <div class="container">
+    <div class="message">
+      <div class="variant">
+        <h2 class="title">Пожалуйста, включите JavaScript для продолжения</h2>
+        <span class="subtitle">Нам нужно убедиться, что вы не робот.</span>
+      </div>
+      <div class="variant" lang="en">
+        <h2 class="title">Please, enable JavaScript to continue</h2>
+        <span class="subtitle">We need to make sure that you are not
+gaz358@gaz358-BOD-WXX9:~/myprog/pars$ 
