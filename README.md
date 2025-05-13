@@ -141,65 +141,54 @@ import (
 )
 
 func main() {
-	// Создаем контекст с таймаутом
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Запускаем chromedp
+	// Настройка запуска headless Chrome
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
-		chromedp.Flag("headless", true), // headless режим
-		chromedp.Flag("disable-gpu", true),
-		chromedp.Flag("no-sandbox", true),
+		chromedp.Flag("headless", true), // можно false для отладки
 		chromedp.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "+
 			"(KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"),
 	)
+
 	allocCtx, cancelAlloc := chromedp.NewExecAllocator(ctx, opts...)
 	defer cancelAlloc()
 
 	taskCtx, cancelTask := chromedp.NewContext(allocCtx)
 	defer cancelTask()
 
-	// URL страницы
-	url := "https://www.ozon.ru/"
-	var html string
+	// Переменные для хранения данных
+	var title, price, rating string
 
-	// Выполняем действия: перейти и получить HTML
+	// Пример URL товара
+	url := "https://www.ozon.ru/product/smartfon-samsung-galaxy-a54-128-gb-612334798/"
+
 	err := chromedp.Run(taskCtx,
 		chromedp.Navigate(url),
-		chromedp.Sleep(3*time.Second), // подождать загрузку скриптов
-		chromedp.OuterHTML("html", &html),
+
+		// Ждём появления элементов на странице
+		chromedp.WaitVisible(`h1`, chromedp.ByQuery),
+		chromedp.Sleep(2*time.Second), // на всякий случай подождем динамическую подгрузку
+
+		// Получаем название товара
+		chromedp.Text(`h1`, &title, chromedp.ByQuery),
+
+		// Получаем цену (сначала основную, потом проверим альтернативный вариант)
+		chromedp.Text(`div[data-widget="webPrice"] span`, &price, chromedp.ByQuery),
+
+		// Получаем рейтинг, если есть
+		chromedp.Text(`div[data-widget="webProductHeading"] span[style*="color:"]`, &rating, chromedp.ByQuery),
 	)
+
 	if err != nil {
-		log.Fatalf("Ошибка при загрузке страницы: %v", err)
+		log.Fatalf("Ошибка: %v", err)
 	}
 
-	// Выводим первые 1000 символов HTML
-	fmt.Println("✅ HTML получен:")
-	fmt.Println(html[:1000])
+	// Вывод результатов
+	fmt.Println("✅ Название товара:", title)
+	fmt.Println("💰 Цена:", price)
+	fmt.Println("⭐ Рейтинг:", rating)
 }
 
 
-gaz358@gaz358-BOD-WXX9:~/myprog/pars$ go run .
-✅ HTML получен:
-<html lang="ru"><head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1">
-  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-  <link rel="stylesheet" href="https://cdn1.ozone.ru/s3/abt-complaints/static/v1/common.css">
-  <title>Доступ ограничен</title>
-  <link rel="stylesheet" href="https://cdn2.ozone.ru/s3/abt-challenge/style_v25.css">
-</head>
 
-<body>
-<noscript>
-  <div class="container">
-    <div class="message">
-      <div class="variant">
-        <h2 class="title">Пожалуйста, включите JavaScript для продолжения</h2>
-        <span class="subtitle">Нам нужно убедиться, что вы не робот.</span>
-      </div>
-      <div class="variant" lang="en">
-        <h2 class="title">Please, enable JavaScript to continue</h2>
-        <span class="subtitle">We need to make sure that you are not
-gaz358@gaz358-BOD-WXX9:~/myprog/pars$ 
