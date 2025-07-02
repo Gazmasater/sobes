@@ -103,10 +103,7 @@ swag init
 
 
 # из корня проекта
-swag init \
-  -g main.go \
-  -d cmd/server,internal/delivery/phttp \
-  -o cmd/server/docs
+swag init -g cmd/server/main.go -o cmd/server/docs
 
 
 
