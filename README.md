@@ -101,6 +101,15 @@ swag init
 Создастся папка docs с документацией.
 
 
+
+# из корня проекта
+swag init \
+  -g ./cmd/server/main.go \
+  --dir ./cmd/server \
+  -o ./cmd/server/docs
+
+
+
 git rm --cached textDB
 
 
