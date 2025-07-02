@@ -104,9 +104,9 @@ swag init
 
 # из корня проекта
 swag init \
-  -g ./cmd/server/main.go \
-  --dir ./cmd/server \
-  -o ./cmd/server/docs
+  -g main.go \
+  -d cmd/server,internal/delivery/phttp \
+  -o cmd/server/docs
 
 
 
